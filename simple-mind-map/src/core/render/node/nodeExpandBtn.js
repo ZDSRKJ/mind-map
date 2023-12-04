@@ -126,11 +126,7 @@ function renderExpandBtn() {
     this._expandBtn.on('click', e => {
       e.stopPropagation()
       // 展开收缩
-      this.mindMap.execCommand(
-        'SET_NODE_EXPAND',
-        this,
-        !this.getData('expand')
-      )
+      this.mindMap.execCommand('SET_NODE_EXPAND', this, !this.getData('expand'))
       this.mindMap.emit('expand_btn_click', this)
     })
     this._expandBtn.on('dblclick', e => {

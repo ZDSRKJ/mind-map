@@ -37,7 +37,7 @@ class View {
     this.mindMap.event.on('drag', (e, event) => {
       // 按住ctrl键拖动为多选
       // 禁用拖拽
-      if (e.ctrlKey || this.mindMap.opt.isDisableDrag) {        
+      if (e.ctrlKey || this.mindMap.opt.isDisableDrag) {
         return
       }
       if (this.firstDrag) {
@@ -261,8 +261,7 @@ class View {
     let drawWidth = rect.width / origTransform.scaleX
     let drawHeight = rect.height / origTransform.scaleY
     let drawRatio = drawWidth / drawHeight
-    let { width: elWidth, height: elHeight } =
-      this.mindMap.elRect
+    let { width: elWidth, height: elHeight } = this.mindMap.elRect
     elWidth = elWidth - fitPadding * 2
     elHeight = elHeight - fitPadding * 2
     let elRatio = elWidth / elHeight

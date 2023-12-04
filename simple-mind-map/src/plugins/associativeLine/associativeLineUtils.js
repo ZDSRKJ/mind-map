@@ -230,8 +230,9 @@ export const getNodeLinePath = (startPoint, endPoint, node, toNode) => {
   let targetIndex = getAssociativeLineTargetIndex(node, toNode)
   // 控制点
   let controlPoints = []
-  let associativeLineTargetControlOffsets =
-    node.getData('associativeLineTargetControlOffsets')
+  let associativeLineTargetControlOffsets = node.getData(
+    'associativeLineTargetControlOffsets'
+  )
   if (
     associativeLineTargetControlOffsets &&
     associativeLineTargetControlOffsets[targetIndex]

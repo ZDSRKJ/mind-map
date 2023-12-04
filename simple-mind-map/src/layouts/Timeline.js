@@ -329,7 +329,8 @@ class Timeline extends Base {
       let path = `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`
       item.generalizationLine.plot(path)
       item.generalizationNode.left = right + generalizationNodeMargin
-      item.generalizationNode.top = top + (bottom - top - item.generalizationNode.height) / 2
+      item.generalizationNode.top =
+        top + (bottom - top - item.generalizationNode.height) / 2
     })
   }
 

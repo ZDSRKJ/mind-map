@@ -102,7 +102,7 @@ class ExportPDF {
         pdf.save(name)
         resolve()
       }
-      image.onerror = (e) => {
+      image.onerror = e => {
         reject(e)
       }
       image.src = img

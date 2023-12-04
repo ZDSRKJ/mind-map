@@ -210,8 +210,8 @@ export const defaultOpt = {
   tagsColorMap: {},
   // 节点协作样式配置
   cooperateStyle: {
-    avatarSize: 22,// 头像大小
-    fontSize: 12,// 如果是文字头像，那么文字的大小
+    avatarSize: 22, // 头像大小
+    fontSize: 12 // 如果是文字头像，那么文字的大小
   },
   // 关联线是否始终显示在节点上层
   // false：即创建关联线和激活关联线时处于最顶层，其他情况下处于节点下方

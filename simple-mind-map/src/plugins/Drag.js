@@ -1,4 +1,9 @@
-import { bfsWalk, throttle, getTopAncestorsFomNodeList, getNodeIndexInNodeList } from '../utils'
+import {
+  bfsWalk,
+  throttle,
+  getTopAncestorsFomNodeList,
+  getNodeIndexInNodeList
+} from '../utils'
 import Base from '../layouts/Base'
 
 // 节点拖动插件
@@ -108,9 +113,7 @@ class Drag extends Base {
       node.endDrag()
     })
     this.removeCloneNode()
-    let overlapNodeUid = this.overlapNode
-      ? this.overlapNode.getData('uid')
-      : ''
+    let overlapNodeUid = this.overlapNode ? this.overlapNode.getData('uid') : ''
     let prevNodeUid = this.prevNode ? this.prevNode.getData('uid') : ''
     let nextNodeUid = this.nextNode ? this.nextNode.getData('uid') : ''
     // 存在重叠子节点，则移动作为其子节点

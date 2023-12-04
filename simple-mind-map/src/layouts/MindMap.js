@@ -47,9 +47,9 @@ class MindMap extends Base {
           } else {
             // 节点生长方向
             newNode.dir =
-              index % 2 === 0
+              cur.data.dir || (index % 2 === 0
                 ? CONSTANTS.LAYOUT_GROW_DIR.RIGHT
-                : CONSTANTS.LAYOUT_GROW_DIR.LEFT
+                : CONSTANTS.LAYOUT_GROW_DIR.LEFT)
           }
           // 根据生长方向定位到父节点的左侧或右侧
           newNode.left =
@@ -116,11 +116,7 @@ class MindMap extends Base {
       this.root,
       null,
       (node, parent, isRoot, layerIndex) => {
-        if (
-          node.getData('expand') &&
-          node.children &&
-          node.children.length
-        ) {
+        if (node.getData('expand') && node.children && node.children.length) {
           let marginY = this.getMarginY(layerIndex + 1)
           let baseTop = node.top + node.height / 2 + marginY
           // 第一个子节点的top值 = 该节点中心的top值 - 子节点的高度之和的一半
@@ -384,7 +380,8 @@ class MindMap extends Base {
         x +
         (isLeft ? -generalizationNodeMargin : generalizationNodeMargin) -
         (isLeft ? item.generalizationNode.width : 0)
-        item.generalizationNode.top = top + (bottom - top - item.generalizationNode.height) / 2
+      item.generalizationNode.top =
+        top + (bottom - top - item.generalizationNode.height) / 2
     })
   }
 

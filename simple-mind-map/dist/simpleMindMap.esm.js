@@ -46883,11 +46883,7 @@ function renderExpandBtn() {
     });
     this._expandBtn.on("click", (e2) => {
       e2.stopPropagation();
-      this.mindMap.execCommand(
-        "SET_NODE_EXPAND",
-        this,
-        !this.getData("expand")
-      );
+      this.mindMap.execCommand("SET_NODE_EXPAND", this, !this.getData("expand"));
       this.mindMap.emit("expand_btn_click", this);
     });
     this._expandBtn.on("dblclick", (e2) => {
@@ -49196,7 +49192,7 @@ var MindMap = class extends Base_default {
           if (parent._node.dir) {
             newNode.dir = parent._node.dir;
           } else {
-            newNode.dir = index3 % 2 === 0 ? CONSTANTS.LAYOUT_GROW_DIR.RIGHT : CONSTANTS.LAYOUT_GROW_DIR.LEFT;
+            newNode.dir = cur.data.dir || (index3 % 2 === 0 ? CONSTANTS.LAYOUT_GROW_DIR.RIGHT : CONSTANTS.LAYOUT_GROW_DIR.LEFT);
           }
           newNode.left = newNode.dir === CONSTANTS.LAYOUT_GROW_DIR.RIGHT ? parent._node.left + parent._node.width + this.getMarginX(layerIndex) : parent._node.left - this.getMarginX(layerIndex) - newNode.width;
         }
@@ -56914,7 +56910,9 @@ function bom(blob, opts) {
       autoBom: !opts
     };
   }
-  if (opts.autoBom && /^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(blob.type)) {
+  if (opts.autoBom && /^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(
+    blob.type
+  )) {
     return new Blob([String.fromCharCode(65279), blob], {
       type: blob.type
     });
@@ -56947,94 +56945,101 @@ function click(node3) {
     node3.dispatchEvent(new MouseEvent("click"));
   } catch (e2) {
     var evt = document.createEvent("MouseEvents");
-    evt.initMouseEvent("click", true, true, window, 0, 0, 0, 80, 20, false, false, false, false, 0, null);
+    evt.initMouseEvent(
+      "click",
+      true,
+      true,
+      window,
+      0,
+      0,
+      0,
+      80,
+      20,
+      false,
+      false,
+      false,
+      false,
+      0,
+      null
+    );
     node3.dispatchEvent(evt);
   }
 }
 var saveAs = globalObject.saveAs || // probably in some web worker
 ((typeof window === "undefined" ? "undefined" : _typeof(window)) !== "object" || window !== globalObject ? function saveAs2() {
-} : (
-  // Use download attribute first if possible (#193 Lumia mobile) unless this is a native app
-  typeof HTMLAnchorElement !== "undefined" && "download" in HTMLAnchorElement.prototype ? function saveAs3(blob, name, opts) {
-    var URL2 = globalObject.URL || globalObject.webkitURL;
-    var a2 = document.createElement("a");
-    name = name || blob.name || "download";
-    a2.download = name;
-    a2.rel = "noopener";
-    if (typeof blob === "string") {
-      a2.href = blob;
-      if (a2.origin !== location.origin) {
-        corsEnabled(a2.href) ? download(blob, name, opts) : click(a2, a2.target = "_blank");
-      } else {
-        click(a2);
-      }
+} : typeof HTMLAnchorElement !== "undefined" && "download" in HTMLAnchorElement.prototype ? function saveAs3(blob, name, opts) {
+  var URL2 = globalObject.URL || globalObject.webkitURL;
+  var a2 = document.createElement("a");
+  name = name || blob.name || "download";
+  a2.download = name;
+  a2.rel = "noopener";
+  if (typeof blob === "string") {
+    a2.href = blob;
+    if (a2.origin !== location.origin) {
+      corsEnabled(a2.href) ? download(blob, name, opts) : click(a2, a2.target = "_blank");
     } else {
-      a2.href = URL2.createObjectURL(blob);
-      setTimeout(function() {
-        URL2.revokeObjectURL(a2.href);
-      }, 4e4);
+      click(a2);
+    }
+  } else {
+    a2.href = URL2.createObjectURL(blob);
+    setTimeout(function() {
+      URL2.revokeObjectURL(a2.href);
+    }, 4e4);
+    setTimeout(function() {
+      click(a2);
+    }, 0);
+  }
+} : "msSaveOrOpenBlob" in navigator ? function saveAs4(blob, name, opts) {
+  name = name || blob.name || "download";
+  if (typeof blob === "string") {
+    if (corsEnabled(blob)) {
+      download(blob, name, opts);
+    } else {
+      var a2 = document.createElement("a");
+      a2.href = blob;
+      a2.target = "_blank";
       setTimeout(function() {
         click(a2);
-      }, 0);
+      });
     }
-  } : (
-    // Use msSaveOrOpenBlob as a second approach
-    "msSaveOrOpenBlob" in navigator ? function saveAs4(blob, name, opts) {
-      name = name || blob.name || "download";
-      if (typeof blob === "string") {
-        if (corsEnabled(blob)) {
-          download(blob, name, opts);
-        } else {
-          var a2 = document.createElement("a");
-          a2.href = blob;
-          a2.target = "_blank";
-          setTimeout(function() {
-            click(a2);
-          });
-        }
-      } else {
-        navigator.msSaveOrOpenBlob(bom(blob, opts), name);
-      }
-    } : (
-      // Fallback to using FileReader and a popup
-      function saveAs5(blob, name, opts, popup) {
-        popup = popup || open("", "_blank");
-        if (popup) {
-          popup.document.title = popup.document.body.innerText = "downloading...";
-        }
-        if (typeof blob === "string")
-          return download(blob, name, opts);
-        var force = blob.type === "application/octet-stream";
-        var isSafari = /constructor/i.test(globalObject.HTMLElement) || globalObject.safari;
-        var isChromeIOS = /CriOS\/[\d]+/.test(navigator.userAgent);
-        if ((isChromeIOS || force && isSafari) && (typeof FileReader === "undefined" ? "undefined" : _typeof(FileReader)) === "object") {
-          var reader = new FileReader();
-          reader.onloadend = function() {
-            var url2 = reader.result;
-            url2 = isChromeIOS ? url2 : url2.replace(/^data:[^;]*;/, "data:attachment/file;");
-            if (popup)
-              popup.location.href = url2;
-            else
-              location = url2;
-            popup = null;
-          };
-          reader.readAsDataURL(blob);
-        } else {
-          var URL2 = globalObject.URL || globalObject.webkitURL;
-          var url = URL2.createObjectURL(blob);
-          if (popup)
-            popup.location = url;
-          else
-            location.href = url;
-          popup = null;
-          setTimeout(function() {
-            URL2.revokeObjectURL(url);
-          }, 4e4);
-        }
-      }
-    )
-  )
-));
+  } else {
+    navigator.msSaveOrOpenBlob(bom(blob, opts), name);
+  }
+} : function saveAs5(blob, name, opts, popup) {
+  popup = popup || open("", "_blank");
+  if (popup) {
+    popup.document.title = popup.document.body.innerText = "downloading...";
+  }
+  if (typeof blob === "string")
+    return download(blob, name, opts);
+  var force = blob.type === "application/octet-stream";
+  var isSafari = /constructor/i.test(globalObject.HTMLElement) || globalObject.safari;
+  var isChromeIOS = /CriOS\/[\d]+/.test(navigator.userAgent);
+  if ((isChromeIOS || force && isSafari) && (typeof FileReader === "undefined" ? "undefined" : _typeof(FileReader)) === "object") {
+    var reader = new FileReader();
+    reader.onloadend = function() {
+      var url2 = reader.result;
+      url2 = isChromeIOS ? url2 : url2.replace(/^data:[^;]*;/, "data:attachment/file;");
+      if (popup)
+        popup.location.href = url2;
+      else
+        location = url2;
+      popup = null;
+    };
+    reader.readAsDataURL(blob);
+  } else {
+    var URL2 = globalObject.URL || globalObject.webkitURL;
+    var url = URL2.createObjectURL(blob);
+    if (popup)
+      popup.location = url;
+    else
+      location.href = url;
+    popup = null;
+    setTimeout(function() {
+      URL2.revokeObjectURL(url);
+    }, 4e4);
+  }
+});
 function RGBColor3(color_string) {
   color_string = color_string || "";
   this.ok = false;
@@ -57190,25 +57195,37 @@ function RGBColor3(color_string) {
     yellowgreen: "9acd32"
   };
   color_string = simple_colors[color_string] || color_string;
-  var color_defs = [{
-    re: /^rgb\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$/,
-    example: ["rgb(123, 234, 45)", "rgb(255,234,245)"],
-    process: function process2(bits3) {
-      return [parseInt(bits3[1]), parseInt(bits3[2]), parseInt(bits3[3])];
+  var color_defs = [
+    {
+      re: /^rgb\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$/,
+      example: ["rgb(123, 234, 45)", "rgb(255,234,245)"],
+      process: function process2(bits3) {
+        return [parseInt(bits3[1]), parseInt(bits3[2]), parseInt(bits3[3])];
+      }
+    },
+    {
+      re: /^(\w{2})(\w{2})(\w{2})$/,
+      example: ["#00ff00", "336699"],
+      process: function process2(bits3) {
+        return [
+          parseInt(bits3[1], 16),
+          parseInt(bits3[2], 16),
+          parseInt(bits3[3], 16)
+        ];
+      }
+    },
+    {
+      re: /^(\w{1})(\w{1})(\w{1})$/,
+      example: ["#fb0", "f0f"],
+      process: function process2(bits3) {
+        return [
+          parseInt(bits3[1] + bits3[1], 16),
+          parseInt(bits3[2] + bits3[2], 16),
+          parseInt(bits3[3] + bits3[3], 16)
+        ];
+      }
     }
-  }, {
-    re: /^(\w{2})(\w{2})(\w{2})$/,
-    example: ["#00ff00", "336699"],
-    process: function process2(bits3) {
-      return [parseInt(bits3[1], 16), parseInt(bits3[2], 16), parseInt(bits3[3], 16)];
-    }
-  }, {
-    re: /^(\w{1})(\w{1})(\w{1})$/,
-    example: ["#fb0", "f0f"],
-    process: function process2(bits3) {
-      return [parseInt(bits3[1] + bits3[1], 16), parseInt(bits3[2] + bits3[2], 16), parseInt(bits3[3] + bits3[3], 16)];
-    }
-  }];
+  ];
   for (var i2 = 0; i2 < color_defs.length; i2++) {
     var re = color_defs[i2].re;
     var processor = color_defs[i2].process;
@@ -57377,7 +57394,12 @@ function hex2(x2) {
   return x2.join("");
 }
 function singleToByteString(n2) {
-  return String.fromCharCode((n2 & 255) >> 0, (n2 & 65280) >> 8, (n2 & 16711680) >> 16, (n2 & 4278190080) >> 24);
+  return String.fromCharCode(
+    (n2 & 255) >> 0,
+    (n2 & 65280) >> 8,
+    (n2 & 16711680) >> 16,
+    (n2 & 4278190080) >> 24
+  );
 }
 function toByteString(x2) {
   return x2.map(singleToByteString).join("");
@@ -57456,11 +57478,18 @@ function PDFSecurity(permissions, userPassword, ownerPassword, fileId) {
   var paddedOwnerPassword = (ownerPassword + this.padding).substr(0, 32);
   this.O = this.processOwnerPassword(paddedUserPassword, paddedOwnerPassword);
   this.P = -((protection ^ 255) + 1);
-  this.encryptionKey = md5Bin(paddedUserPassword + this.O + this.lsbFirstWord(this.P) + this.hexToBytes(fileId)).substr(0, 5);
+  this.encryptionKey = md5Bin(
+    paddedUserPassword + this.O + this.lsbFirstWord(this.P) + this.hexToBytes(fileId)
+  ).substr(0, 5);
   this.U = rc4(this.encryptionKey, this.padding);
 }
 PDFSecurity.prototype.lsbFirstWord = function(data2) {
-  return String.fromCharCode(data2 >> 0 & 255, data2 >> 8 & 255, data2 >> 16 & 255, data2 >> 24 & 255);
+  return String.fromCharCode(
+    data2 >> 0 & 255,
+    data2 >> 8 & 255,
+    data2 >> 16 & 255,
+    data2 >> 24 & 255
+  );
 };
 PDFSecurity.prototype.toHexString = function(byteString) {
   return byteString.split("").map(function(byte) {
@@ -57478,19 +57507,40 @@ PDFSecurity.prototype.processOwnerPassword = function(paddedUserPassword, padded
   return rc4(key, paddedUserPassword);
 };
 PDFSecurity.prototype.encryptor = function(objectId, generation) {
-  var key = md5Bin(this.encryptionKey + String.fromCharCode(objectId & 255, objectId >> 8 & 255, objectId >> 16 & 255, generation & 255, generation >> 8 & 255)).substr(0, 10);
+  var key = md5Bin(
+    this.encryptionKey + String.fromCharCode(
+      objectId & 255,
+      objectId >> 8 & 255,
+      objectId >> 16 & 255,
+      generation & 255,
+      generation >> 8 & 255
+    )
+  ).substr(0, 10);
   return function(data2) {
     return rc4(key, data2);
   };
 };
 function toPDFName(str) {
   if (/[^\u0000-\u00ff]/.test(str)) {
-    throw new Error("Invalid PDF Name Object: " + str + ", Only accept ASCII characters.");
+    throw new Error(
+      "Invalid PDF Name Object: " + str + ", Only accept ASCII characters."
+    );
   }
   var result = "", strLength = str.length;
   for (var i2 = 0; i2 < strLength; i2++) {
     var charCode = str.charCodeAt(i2);
-    if (charCode < 33 || charCode === 35 || charCode === 37 || charCode === 40 || charCode === 41 || charCode === 47 || charCode === 60 || charCode === 62 || charCode === 91 || charCode === 93 || charCode === 123 || charCode === 125 || charCode > 126) {
+    if (charCode < 33 || charCode === 35 || /* # */
+    charCode === 37 || /* % */
+    charCode === 40 || /* ( */
+    charCode === 41 || /* ) */
+    charCode === 47 || /* / */
+    charCode === 60 || /* < */
+    charCode === 62 || /* > */
+    charCode === 91 || /* [ */
+    charCode === 93 || /* ] */
+    charCode === 123 || /* { */
+    charCode === 125 || /* } */
+    charCode > 126) {
       var hexStr = charCode.toString(16), paddingHexStr = ("0" + hexStr).slice(-2);
       result += "#" + paddingHexStr;
     } else {
@@ -57501,13 +57551,17 @@ function toPDFName(str) {
 }
 function PubSub(context) {
   if (_typeof(context) !== "object") {
-    throw new Error("Invalid Context passed to initialize PubSub (jsPDF-module)");
+    throw new Error(
+      "Invalid Context passed to initialize PubSub (jsPDF-module)"
+    );
   }
   var topics = {};
   this.subscribe = function(topic, callback, once) {
     once = once || false;
     if (typeof topic !== "string" || typeof callback !== "function" || typeof once !== "boolean") {
-      throw new Error("Invalid arguments passed to PubSub.subscribe (jsPDF-module)");
+      throw new Error(
+        "Invalid arguments passed to PubSub.subscribe (jsPDF-module)"
+      );
     }
     if (!topics.hasOwnProperty(topic)) {
       topics[topic] = {};
@@ -57717,7 +57771,16 @@ function jsPDF(options) {
   var apiMode = ApiMode.COMPAT;
   function advancedAPI() {
     this.saveGraphicsState();
-    out(new Matrix3(scaleFactor2, 0, 0, -scaleFactor2, 0, getPageHeight() * scaleFactor2).toString() + " cm");
+    out(
+      new Matrix3(
+        scaleFactor2,
+        0,
+        0,
+        -scaleFactor2,
+        0,
+        getPageHeight() * scaleFactor2
+      ).toString() + " cm"
+    );
     this.setFontSize(this.getFontSize() / scaleFactor2);
     defaultPathOperation = "n";
     apiMode = ApiMode.ADVANCED;
@@ -57769,7 +57832,9 @@ function jsPDF(options) {
   };
   var advancedApiModeTrap = function advancedApiModeTrap2(methodName) {
     if (apiMode !== ApiMode.ADVANCED) {
-      throw new Error(methodName + " is only available in 'advanced' API mode. You need to call advancedAPI() first.");
+      throw new Error(
+        methodName + " is only available in 'advanced' API mode. You need to call advancedAPI() first."
+      );
     }
   };
   var roundToPrecision = API.roundToPrecision = API.__private__.roundToPrecision = function(number, parmPrecision) {
@@ -57856,7 +57921,12 @@ function jsPDF(options) {
       }).join("");
     }
     if (encryptionOptions !== null) {
-      encryption = new PDFSecurity(encryptionOptions.userPermissions, encryptionOptions.userPassword, encryptionOptions.ownerPassword, fileId);
+      encryption = new PDFSecurity(
+        encryptionOptions.userPermissions,
+        encryptionOptions.userPassword,
+        encryptionOptions.ownerPassword,
+        fileId
+      );
     }
     return fileId;
   };
@@ -57871,7 +57941,16 @@ function jsPDF(options) {
   var convertDateToPDFDate = API.__private__.convertDateToPDFDate = function(parmDate) {
     var result = "";
     var tzoffset = parmDate.getTimezoneOffset(), tzsign = tzoffset < 0 ? "+" : "-", tzhour = Math.floor(Math.abs(tzoffset / 60)), tzmin = Math.abs(tzoffset % 60), timeZoneString = [tzsign, padd2(tzhour), "'", padd2(tzmin), "'"].join("");
-    result = ["D:", parmDate.getFullYear(), padd2(parmDate.getMonth() + 1), padd2(parmDate.getDate()), padd2(parmDate.getHours()), padd2(parmDate.getMinutes()), padd2(parmDate.getSeconds()), timeZoneString].join("");
+    result = [
+      "D:",
+      parmDate.getFullYear(),
+      padd2(parmDate.getMonth() + 1),
+      padd2(parmDate.getDate()),
+      padd2(parmDate.getHours()),
+      padd2(parmDate.getMinutes()),
+      padd2(parmDate.getSeconds()),
+      timeZoneString
+    ].join("");
     return result;
   };
   var convertPDFDateToDate = API.__private__.convertPDFDateToDate = function(parmPDFDate) {
@@ -57959,7 +58038,9 @@ function jsPDF(options) {
     return outputDestination;
   };
   var write = API.__private__.write = function(value) {
-    return out(arguments.length === 1 ? value.toString() : Array.prototype.join.call(arguments, " "));
+    return out(
+      arguments.length === 1 ? value.toString() : Array.prototype.join.call(arguments, " ")
+    );
   };
   var getArrayBuffer = API.__private__.getArrayBuffer = function(data2) {
     if (data2 instanceof ArrayBuffer) {
@@ -57971,7 +58052,22 @@ function jsPDF(options) {
     }
     return ab;
   };
-  var standardFonts = [["Helvetica", "helvetica", "normal", "WinAnsiEncoding"], ["Helvetica-Bold", "helvetica", "bold", "WinAnsiEncoding"], ["Helvetica-Oblique", "helvetica", "italic", "WinAnsiEncoding"], ["Helvetica-BoldOblique", "helvetica", "bolditalic", "WinAnsiEncoding"], ["Courier", "courier", "normal", "WinAnsiEncoding"], ["Courier-Bold", "courier", "bold", "WinAnsiEncoding"], ["Courier-Oblique", "courier", "italic", "WinAnsiEncoding"], ["Courier-BoldOblique", "courier", "bolditalic", "WinAnsiEncoding"], ["Times-Roman", "times", "normal", "WinAnsiEncoding"], ["Times-Bold", "times", "bold", "WinAnsiEncoding"], ["Times-Italic", "times", "italic", "WinAnsiEncoding"], ["Times-BoldItalic", "times", "bolditalic", "WinAnsiEncoding"], ["ZapfDingbats", "zapfdingbats", "normal", null], ["Symbol", "symbol", "normal", null]];
+  var standardFonts = [
+    ["Helvetica", "helvetica", "normal", "WinAnsiEncoding"],
+    ["Helvetica-Bold", "helvetica", "bold", "WinAnsiEncoding"],
+    ["Helvetica-Oblique", "helvetica", "italic", "WinAnsiEncoding"],
+    ["Helvetica-BoldOblique", "helvetica", "bolditalic", "WinAnsiEncoding"],
+    ["Courier", "courier", "normal", "WinAnsiEncoding"],
+    ["Courier-Bold", "courier", "bold", "WinAnsiEncoding"],
+    ["Courier-Oblique", "courier", "italic", "WinAnsiEncoding"],
+    ["Courier-BoldOblique", "courier", "bolditalic", "WinAnsiEncoding"],
+    ["Times-Roman", "times", "normal", "WinAnsiEncoding"],
+    ["Times-Bold", "times", "bold", "WinAnsiEncoding"],
+    ["Times-Italic", "times", "italic", "WinAnsiEncoding"],
+    ["Times-BoldItalic", "times", "bolditalic", "WinAnsiEncoding"],
+    ["ZapfDingbats", "zapfdingbats", "normal", null],
+    ["Symbol", "symbol", "normal", null]
+  ];
   API.__private__.getStandardFonts = function() {
     return standardFonts;
   };
@@ -58001,7 +58097,14 @@ function jsPDF(options) {
   };
   var zoomMode;
   var setZoomMode = API.__private__.setZoomMode = function(zoom) {
-    var validZoomModes = [void 0, null, "fullwidth", "fullheight", "fullpage", "original"];
+    var validZoomModes = [
+      void 0,
+      null,
+      "fullwidth",
+      "fullheight",
+      "fullpage",
+      "original"
+    ];
     if (/^(?:\d+\.\d*|\d*\.\d+|\d+)%$/.test(zoom)) {
       zoomMode = zoom;
     } else if (!isNaN(zoom)) {
@@ -58009,7 +58112,9 @@ function jsPDF(options) {
     } else if (validZoomModes.indexOf(zoom) !== -1) {
       zoomMode = zoom;
     } else {
-      throw new Error('zoom must be Integer (e.g. 2), a percentage Value (e.g. 300%) or fullwidth, fullheight, fullpage, original. "' + zoom + '" is not recognized.');
+      throw new Error(
+        'zoom must be Integer (e.g. 2), a percentage Value (e.g. 300%) or fullwidth, fullheight, fullpage, original. "' + zoom + '" is not recognized.'
+      );
     }
   };
   API.__private__.getZoomMode = function() {
@@ -58017,9 +58122,18 @@ function jsPDF(options) {
   };
   var pageMode;
   var setPageMode = API.__private__.setPageMode = function(pmode) {
-    var validPageModes = [void 0, null, "UseNone", "UseOutlines", "UseThumbs", "FullScreen"];
+    var validPageModes = [
+      void 0,
+      null,
+      "UseNone",
+      "UseOutlines",
+      "UseThumbs",
+      "FullScreen"
+    ];
     if (validPageModes.indexOf(pmode) == -1) {
-      throw new Error('Page mode must be one of UseNone, UseOutlines, UseThumbs, or FullScreen. "' + pmode + '" is not recognized.');
+      throw new Error(
+        'Page mode must be one of UseNone, UseOutlines, UseThumbs, or FullScreen. "' + pmode + '" is not recognized.'
+      );
     }
     pageMode = pmode;
   };
@@ -58028,9 +58142,19 @@ function jsPDF(options) {
   };
   var layoutMode;
   var setLayoutMode = API.__private__.setLayoutMode = function(layout) {
-    var validLayoutModes = [void 0, null, "continuous", "single", "twoleft", "tworight", "two"];
+    var validLayoutModes = [
+      void 0,
+      null,
+      "continuous",
+      "single",
+      "twoleft",
+      "tworight",
+      "two"
+    ];
     if (validLayoutModes.indexOf(layout) == -1) {
-      throw new Error('Layout mode must be one of continuous, single, twoleft, tworight. "' + layout + '" is not recognized.');
+      throw new Error(
+        'Layout mode must be one of continuous, single, twoleft, tworight. "' + layout + '" is not recognized.'
+      );
     }
     layoutMode = layout;
   };
@@ -58345,7 +58469,13 @@ function jsPDF(options) {
   };
   API.beginTilingPattern = function(pattern) {
     advancedApiModeTrap("beginTilingPattern()");
-    beginNewRenderTarget(pattern.boundingBox[0], pattern.boundingBox[1], pattern.boundingBox[2] - pattern.boundingBox[0], pattern.boundingBox[3] - pattern.boundingBox[1], pattern.matrix);
+    beginNewRenderTarget(
+      pattern.boundingBox[0],
+      pattern.boundingBox[1],
+      pattern.boundingBox[2] - pattern.boundingBox[0],
+      pattern.boundingBox[3] - pattern.boundingBox[1],
+      pattern.matrix
+    );
   };
   API.endTilingPattern = function(key, pattern) {
     advancedApiModeTrap("endTilingPattern()");
@@ -58419,7 +58549,9 @@ function jsPDF(options) {
       if (rgbColor.ok) {
         ch1 = rgbColor.toHex();
       } else if (!/^\d*\.?\d*$/.test(ch1)) {
-        throw new Error('Invalid color "' + ch1 + '" passed to jsPDF.encodeColorString.');
+        throw new Error(
+          'Invalid color "' + ch1 + '" passed to jsPDF.encodeColorString.'
+        );
       }
     }
     if (typeof ch1 === "string" && /^#[0-9A-Fa-f]{3}$/.test(ch1)) {
@@ -58456,11 +58588,21 @@ function jsPDF(options) {
       } else {
         switch (options2.precision) {
           case 2:
-            color = [f23(ch1 / 255), f23(ch2 / 255), f23(ch3 / 255), letterArray[1]].join(" ");
+            color = [
+              f23(ch1 / 255),
+              f23(ch2 / 255),
+              f23(ch3 / 255),
+              letterArray[1]
+            ].join(" ");
             break;
           default:
           case 3:
-            color = [f3(ch1 / 255), f3(ch2 / 255), f3(ch3 / 255), letterArray[1]].join(" ");
+            color = [
+              f3(ch1 / 255),
+              f3(ch2 / 255),
+              f3(ch3 / 255),
+              letterArray[1]
+            ].join(" ");
         }
       }
     } else {
@@ -58469,11 +58611,15 @@ function jsPDF(options) {
       } else {
         switch (options2.precision) {
           case 2:
-            color = [f23(ch1), f23(ch2), f23(ch3), f23(ch4), letterArray[2]].join(" ");
+            color = [f23(ch1), f23(ch2), f23(ch3), f23(ch4), letterArray[2]].join(
+              " "
+            );
             break;
           case 3:
           default:
-            color = [f3(ch1), f3(ch2), f3(ch3), f3(ch4), letterArray[2]].join(" ");
+            color = [f3(ch1), f3(ch2), f3(ch3), f3(ch4), letterArray[2]].join(
+              " "
+            );
         }
       }
     }
@@ -58494,7 +58640,9 @@ function jsPDF(options) {
       return data3;
     };
     if (encryptionOptions !== null && typeof objectId == "undefined") {
-      throw new Error("ObjectId must be passed to putStream for file encryption");
+      throw new Error(
+        "ObjectId must be passed to putStream for file encryption"
+      );
     }
     if (encryptionOptions !== null) {
       encryptor = encryption.encryptor(objectId, 0);
@@ -58568,18 +58716,28 @@ function jsPDF(options) {
     out("<</Type /Page");
     out("/Parent " + page2.rootDictionaryObjId + " 0 R");
     out("/Resources " + page2.resourceDictionaryObjId + " 0 R");
-    out("/MediaBox [" + parseFloat(hpf(page2.mediaBox.bottomLeftX)) + " " + parseFloat(hpf(page2.mediaBox.bottomLeftY)) + " " + hpf(page2.mediaBox.topRightX) + " " + hpf(page2.mediaBox.topRightY) + "]");
+    out(
+      "/MediaBox [" + parseFloat(hpf(page2.mediaBox.bottomLeftX)) + " " + parseFloat(hpf(page2.mediaBox.bottomLeftY)) + " " + hpf(page2.mediaBox.topRightX) + " " + hpf(page2.mediaBox.topRightY) + "]"
+    );
     if (page2.cropBox !== null) {
-      out("/CropBox [" + hpf(page2.cropBox.bottomLeftX) + " " + hpf(page2.cropBox.bottomLeftY) + " " + hpf(page2.cropBox.topRightX) + " " + hpf(page2.cropBox.topRightY) + "]");
+      out(
+        "/CropBox [" + hpf(page2.cropBox.bottomLeftX) + " " + hpf(page2.cropBox.bottomLeftY) + " " + hpf(page2.cropBox.topRightX) + " " + hpf(page2.cropBox.topRightY) + "]"
+      );
     }
     if (page2.bleedBox !== null) {
-      out("/BleedBox [" + hpf(page2.bleedBox.bottomLeftX) + " " + hpf(page2.bleedBox.bottomLeftY) + " " + hpf(page2.bleedBox.topRightX) + " " + hpf(page2.bleedBox.topRightY) + "]");
+      out(
+        "/BleedBox [" + hpf(page2.bleedBox.bottomLeftX) + " " + hpf(page2.bleedBox.bottomLeftY) + " " + hpf(page2.bleedBox.topRightX) + " " + hpf(page2.bleedBox.topRightY) + "]"
+      );
     }
     if (page2.trimBox !== null) {
-      out("/TrimBox [" + hpf(page2.trimBox.bottomLeftX) + " " + hpf(page2.trimBox.bottomLeftY) + " " + hpf(page2.trimBox.topRightX) + " " + hpf(page2.trimBox.topRightY) + "]");
+      out(
+        "/TrimBox [" + hpf(page2.trimBox.bottomLeftX) + " " + hpf(page2.trimBox.bottomLeftY) + " " + hpf(page2.trimBox.topRightX) + " " + hpf(page2.trimBox.topRightY) + "]"
+      );
     }
     if (page2.artBox !== null) {
-      out("/ArtBox [" + hpf(page2.artBox.bottomLeftX) + " " + hpf(page2.artBox.bottomLeftY) + " " + hpf(page2.artBox.topRightX) + " " + hpf(page2.artBox.topRightY) + "]");
+      out(
+        "/ArtBox [" + hpf(page2.artBox.bottomLeftX) + " " + hpf(page2.artBox.bottomLeftY) + " " + hpf(page2.artBox.topRightX) + " " + hpf(page2.artBox.topRightY) + "]"
+      );
     }
     if (typeof page2.userUnit === "number" && page2.userUnit !== 1) {
       out("/UserUnit " + page2.userUnit);
@@ -58613,20 +58771,22 @@ function jsPDF(options) {
       pagesContext[n2].contentsObjId = newObjectDeferred();
     }
     for (n2 = 1; n2 <= page; n2++) {
-      pageObjectNumbers.push(putPage({
-        number: n2,
-        data: pages[n2],
-        objId: pagesContext[n2].objId,
-        contentsObjId: pagesContext[n2].contentsObjId,
-        mediaBox: pagesContext[n2].mediaBox,
-        cropBox: pagesContext[n2].cropBox,
-        bleedBox: pagesContext[n2].bleedBox,
-        trimBox: pagesContext[n2].trimBox,
-        artBox: pagesContext[n2].artBox,
-        userUnit: pagesContext[n2].userUnit,
-        rootDictionaryObjId,
-        resourceDictionaryObjId
-      }));
+      pageObjectNumbers.push(
+        putPage({
+          number: n2,
+          data: pages[n2],
+          objId: pagesContext[n2].objId,
+          contentsObjId: pagesContext[n2].contentsObjId,
+          mediaBox: pagesContext[n2].mediaBox,
+          cropBox: pagesContext[n2].cropBox,
+          bleedBox: pagesContext[n2].bleedBox,
+          trimBox: pagesContext[n2].trimBox,
+          artBox: pagesContext[n2].artBox,
+          userUnit: pagesContext[n2].userUnit,
+          rootDictionaryObjId,
+          resourceDictionaryObjId
+        })
+      );
     }
     newObjectDeferredBegin(rootDictionaryObjId, true);
     out("<</Type /Pages");
@@ -58684,7 +58844,12 @@ function jsPDF(options) {
     });
     options2.push({
       key: "BBox",
-      value: "[" + [hpf(xObject.x), hpf(xObject.y), hpf(xObject.x + xObject.width), hpf(xObject.y + xObject.height)].join(" ") + "]"
+      value: "[" + [
+        hpf(xObject.x),
+        hpf(xObject.y),
+        hpf(xObject.x + xObject.width),
+        hpf(xObject.y + xObject.height)
+      ].join(" ") + "]"
     });
     options2.push({
       key: "Matrix",
@@ -58897,7 +59062,9 @@ function jsPDF(options) {
     out("/XObject <<");
     for (var xObjectKey in renderTargets) {
       if (renderTargets.hasOwnProperty(xObjectKey) && renderTargets[xObjectKey].objectNumber >= 0) {
-        out("/" + xObjectKey + " " + renderTargets[xObjectKey].objectNumber + " 0 R");
+        out(
+          "/" + xObjectKey + " " + renderTargets[xObjectKey].objectNumber + " 0 R"
+        );
       }
     }
     events.publish("putXobjectDict");
@@ -58931,7 +59098,9 @@ function jsPDF(options) {
       out("/Shading <<");
       for (var patternKey in patterns) {
         if (patterns.hasOwnProperty(patternKey) && patterns[patternKey] instanceof ShadingPattern && patterns[patternKey].objectNumber >= 0) {
-          out("/" + patternKey + " " + patterns[patternKey].objectNumber + " 0 R");
+          out(
+            "/" + patternKey + " " + patterns[patternKey].objectNumber + " 0 R"
+          );
         }
       }
       events.publish("putShadingPatternDict");
@@ -58943,7 +59112,9 @@ function jsPDF(options) {
       out("/Pattern <<");
       for (var patternKey in patterns) {
         if (patterns.hasOwnProperty(patternKey) && patterns[patternKey] instanceof API.TilingPattern && patterns[patternKey].objectNumber >= 0 && patterns[patternKey].objectNumber < objectOid) {
-          out("/" + patternKey + " " + patterns[patternKey].objectNumber + " 0 R");
+          out(
+            "/" + patternKey + " " + patterns[patternKey].objectNumber + " 0 R"
+          );
         }
       }
       events.publish("putTilingPatternDict");
@@ -59024,7 +59195,14 @@ function jsPDF(options) {
   };
   var addFonts = function addFonts2(arrayOfFonts) {
     for (var i2 = 0, l2 = standardFonts.length; i2 < l2; i2++) {
-      var fontKey = addFont.call(this, arrayOfFonts[i2][0], arrayOfFonts[i2][1], arrayOfFonts[i2][2], standardFonts[i2][3], true);
+      var fontKey = addFont.call(
+        this,
+        arrayOfFonts[i2][0],
+        arrayOfFonts[i2][1],
+        arrayOfFonts[i2][2],
+        standardFonts[i2][3],
+        true
+      );
       if (putOnlyUsedFonts === false) {
         usedFonts[fontKey] = true;
       }
@@ -59109,7 +59287,9 @@ function jsPDF(options) {
       ch = text4.charCodeAt(i2);
       bch = ch >> 8;
       if (bch >> 8) {
-        throw new Error("Character at position " + i2 + " of string '" + text4 + "' exceeds 16bits. Cannot be encoded into UCS-2 BE");
+        throw new Error(
+          "Character at position " + i2 + " of string '" + text4 + "' exceeds 16bits. Cannot be encoded into UCS-2 BE"
+        );
       }
       newtext.push(bch);
       newtext.push(ch - (bch << 8));
@@ -59158,7 +59338,9 @@ function jsPDF(options) {
       height2 = format[1];
     }
     if (width2 > 14400 || height2 > 14400) {
-      console2.warn("A page in a PDF can not be wider or taller than 14400 userUnit. jsPDF limits the width/height to 14400");
+      console2.warn(
+        "A page in a PDF can not be wider or taller than 14400 userUnit. jsPDF limits the width/height to 14400"
+      );
       width2 = Math.min(14400, width2);
       height2 = Math.min(14400, height2);
     }
@@ -59219,7 +59401,9 @@ function jsPDF(options) {
       key = fontmap[fontName][fontStyle];
     } else {
       if (options2.disableWarning === false) {
-        console2.warn("Unable to look up font label for font '" + fontName + "', '" + fontStyle + "'. Refer to getFontList() for available fonts.");
+        console2.warn(
+          "Unable to look up font label for font '" + fontName + "', '" + fontStyle + "'. Refer to getFontList() for available fonts."
+        );
       }
     }
     if (!key && !options2.noFallback) {
@@ -59242,7 +59426,9 @@ function jsPDF(options) {
     out("/Producer (" + pdfEscape3(encryptor("jsPDF " + jsPDF.version)) + ")");
     for (var key in documentProperties) {
       if (documentProperties.hasOwnProperty(key) && documentProperties[key]) {
-        out("/" + key.substr(0, 1).toUpperCase() + key.substr(1) + " (" + pdfEscape3(encryptor(documentProperties[key])) + ")");
+        out(
+          "/" + key.substr(0, 1).toUpperCase() + key.substr(1) + " (" + pdfEscape3(encryptor(documentProperties[key])) + ")"
+        );
       }
     }
     out("/CreationDate (" + pdfEscape3(encryptor(creationDate)) + ")");
@@ -59406,9 +59592,13 @@ function jsPDF(options) {
       case "bloburi":
       case "bloburl":
         if (typeof globalObject.URL !== "undefined" && typeof globalObject.URL.createObjectURL === "function") {
-          return globalObject.URL && globalObject.URL.createObjectURL(getBlob(buildDocument("arrayBuffer"))) || void 0;
+          return globalObject.URL && globalObject.URL.createObjectURL(
+            getBlob(buildDocument("arrayBuffer"))
+          ) || void 0;
         } else {
-          console2.warn("bloburl is not supported by your system, because URL.createObjectURL is not supported by your browser.");
+          console2.warn(
+            "bloburl is not supported by your system, because URL.createObjectURL is not supported by your browser."
+          );
         }
         break;
       case "datauristring":
@@ -59436,7 +59626,9 @@ function jsPDF(options) {
           }
           return nW;
         } else {
-          throw new Error("The option pdfobjectnewwindow just works in a browser-environment.");
+          throw new Error(
+            "The option pdfobjectnewwindow just works in a browser-environment."
+          );
         }
       case "pdfjsnewwindow":
         if (Object.prototype.toString.call(globalObject) === "[object Window]") {
@@ -59446,14 +59638,20 @@ function jsPDF(options) {
           if (PDFjsNewWindow !== null) {
             PDFjsNewWindow.document.write(htmlForPDFjsNewWindow);
             var scope = this;
-            PDFjsNewWindow.document.documentElement.querySelector("#pdfViewer").onload = function() {
+            PDFjsNewWindow.document.documentElement.querySelector(
+              "#pdfViewer"
+            ).onload = function() {
               PDFjsNewWindow.document.title = options2.filename;
-              PDFjsNewWindow.document.documentElement.querySelector("#pdfViewer").contentWindow.PDFViewerApplication.open(scope.output("bloburl"));
+              PDFjsNewWindow.document.documentElement.querySelector("#pdfViewer").contentWindow.PDFViewerApplication.open(
+                scope.output("bloburl")
+              );
             };
           }
           return PDFjsNewWindow;
         } else {
-          throw new Error("The option pdfjsnewwindow just works in a browser-environment.");
+          throw new Error(
+            "The option pdfjsnewwindow just works in a browser-environment."
+          );
         }
       case "dataurlnewwindow":
         if (Object.prototype.toString.call(globalObject) === "[object Window]") {
@@ -59466,12 +59664,17 @@ function jsPDF(options) {
           if (dataURLNewWindow || typeof safari === "undefined")
             return dataURLNewWindow;
         } else {
-          throw new Error("The option dataurlnewwindow just works in a browser-environment.");
+          throw new Error(
+            "The option dataurlnewwindow just works in a browser-environment."
+          );
         }
         break;
       case "datauri":
       case "dataurl":
-        return globalObject.document.location.href = this.output("datauristring", options2);
+        return globalObject.document.location.href = this.output(
+          "datauristring",
+          options2
+        );
       default:
         return null;
     }
@@ -59633,7 +59836,9 @@ function jsPDF(options) {
         };
       }
     } else {
-      advancedApiModeTrap("The transform parameter of text() with a Matrix value");
+      advancedApiModeTrap(
+        "The transform parameter of text() with a Matrix value"
+      );
       transformationMatrix = transform2;
     }
     if (isNaN(x2) || isNaN(y3) || typeof text4 === "undefined" || text4 === null) {
@@ -59710,7 +59915,9 @@ function jsPDF(options) {
       textIsOfTypeString = tmpTextIsOfTypeString;
     }
     if (textIsOfTypeString === false) {
-      throw new Error('Type of text must be string or Array. "' + text4 + '" is not recognized.');
+      throw new Error(
+        'Type of text must be string or Array. "' + text4 + '" is not recognized.'
+      );
     }
     if (typeof text4 === "string") {
       if (text4.match(/[\r?\n]/)) {
@@ -59843,10 +60050,13 @@ function jsPDF(options) {
     charSpace = options2.charSpace || activeCharSpace;
     maxWidth = options2.maxWidth || 0;
     var lineWidths;
-    flags = Object.assign({
-      autoencode: true,
-      noBOM: true
-    }, options2.flags);
+    flags = Object.assign(
+      {
+        autoencode: true,
+        noBOM: true
+      },
+      options2.flags
+    );
     var wordSpacingPerLine = [];
     if (Object.prototype.toString.call(text4) === "[object Array]") {
       da = transformTextToSpecialArray(text4);
@@ -59907,14 +60117,22 @@ function jsPDF(options) {
           newY = l2 === 0 ? getVerticalCoordinate(y3) : -leading;
           newX = l2 === 0 ? getHorizontalCoordinate(x2) : 0;
           if (l2 < len - 1) {
-            wordSpacingPerLine.push(hpf(scale3((maxWidth - lineWidths[l2]) / (da[l2].split(" ").length - 1))));
+            wordSpacingPerLine.push(
+              hpf(
+                scale3(
+                  (maxWidth - lineWidths[l2]) / (da[l2].split(" ").length - 1)
+                )
+              )
+            );
           } else {
             wordSpacingPerLine.push(0);
           }
           text4.push([da[l2], newX, newY]);
         }
       } else {
-        throw new Error('Unrecognized alignment option, use "left", "center", "right" or "justify".');
+        throw new Error(
+          'Unrecognized alignment option, use "left", "center", "right" or "justify".'
+        );
       }
     }
     var doReversing = typeof options2.R2L === "boolean" ? options2.R2L : R2L;
@@ -59957,12 +60175,21 @@ function jsPDF(options) {
       var position3 = "";
       if (parmTransformationMatrix instanceof Matrix3) {
         if (typeof options2.angle === "number") {
-          parmTransformationMatrix = matrixMult(parmTransformationMatrix, new Matrix3(1, 0, 0, 1, parmPosX, parmPosY));
+          parmTransformationMatrix = matrixMult(
+            parmTransformationMatrix,
+            new Matrix3(1, 0, 0, 1, parmPosX, parmPosY)
+          );
         } else {
-          parmTransformationMatrix = matrixMult(new Matrix3(1, 0, 0, 1, parmPosX, parmPosY), parmTransformationMatrix);
+          parmTransformationMatrix = matrixMult(
+            new Matrix3(1, 0, 0, 1, parmPosX, parmPosY),
+            parmTransformationMatrix
+          );
         }
         if (apiMode === ApiMode.ADVANCED) {
-          parmTransformationMatrix = matrixMult(new Matrix3(1, 0, 0, -1, 0, 0), parmTransformationMatrix);
+          parmTransformationMatrix = matrixMult(
+            new Matrix3(1, 0, 0, -1, 0, 0),
+            parmTransformationMatrix
+          );
         }
         position3 = parmTransformationMatrix.join(" ") + " Tm\n";
       } else {
@@ -59988,11 +60215,15 @@ function jsPDF(options) {
         wordSpacing = wordSpacingPerLine[lineIndex] + " Tw\n";
       }
       if (lineIndex === 0) {
-        text4.push(wordSpacing + generatePosition(posX, posY, transformationMatrix) + content4);
+        text4.push(
+          wordSpacing + generatePosition(posX, posY, transformationMatrix) + content4
+        );
       } else if (variant === STRING) {
         text4.push(wordSpacing + content4);
       } else if (variant === ARRAY) {
-        text4.push(wordSpacing + generatePosition(posX, posY, transformationMatrix) + content4);
+        text4.push(
+          wordSpacing + generatePosition(posX, posY, transformationMatrix) + content4
+        );
       }
     }
     text4 = variant === STRING ? text4.join(" Tj\nT* ") : text4.join(" Tj\n");
@@ -60024,7 +60255,20 @@ function jsPDF(options) {
     return this;
   };
   var isValidStyle = API.__private__.isValidStyle = function(style) {
-    var validStyleVariants = [void 0, null, "S", "D", "F", "DF", "FD", "f", "f*", "B", "B*", "n"];
+    var validStyleVariants = [
+      void 0,
+      null,
+      "S",
+      "D",
+      "F",
+      "DF",
+      "FD",
+      "f",
+      "f*",
+      "B",
+      "B*",
+      "n"
+    ];
     var result = false;
     if (validStyleVariants.indexOf(style) !== -1) {
       result = true;
@@ -60099,7 +60343,13 @@ function jsPDF(options) {
     out(style);
   };
   function cloneTilingPattern(patternKey, boundingBox, xStep, yStep, matrix) {
-    var clone = new TilingPattern(boundingBox || this.boundingBox, xStep || this.xStep, yStep || this.yStep, this.gState, matrix || this.matrix);
+    var clone = new TilingPattern(
+      boundingBox || this.boundingBox,
+      xStep || this.xStep,
+      yStep || this.yStep,
+      this.gState,
+      matrix || this.matrix
+    );
     clone.stream = this.stream;
     var key = patternKey + "$$" + this.cloneIndex++ + "$$";
     addPattern(key, clone);
@@ -60121,7 +60371,14 @@ function jsPDF(options) {
       var matrix = new Matrix3(1, 0, 0, -1, 0, getPageHeight());
       if (patternData.matrix) {
         matrix = matrix.multiply(patternData.matrix || identityMatrix);
-        patternId = cloneTilingPattern.call(pattern, patternData.key, patternData.boundingBox, patternData.xStep, patternData.yStep, matrix).id;
+        patternId = cloneTilingPattern.call(
+          pattern,
+          patternData.key,
+          patternData.boundingBox,
+          patternData.xStep,
+          patternData.yStep,
+          matrix
+        ).id;
       }
       out("q");
       out("/Pattern cs");
@@ -60159,7 +60416,17 @@ function jsPDF(options) {
     return this;
   };
   var curveTo = API.curveTo = function(x1, y1, x2, y22, x3, y3) {
-    out([hpf(scale3(x1)), hpf(transformScaleY(y1)), hpf(scale3(x2)), hpf(transformScaleY(y22)), hpf(scale3(x3)), hpf(transformScaleY(y3)), "c"].join(" "));
+    out(
+      [
+        hpf(scale3(x1)),
+        hpf(transformScaleY(y1)),
+        hpf(scale3(x2)),
+        hpf(transformScaleY(y22)),
+        hpf(scale3(x3)),
+        hpf(transformScaleY(y3)),
+        "c"
+      ].join(" ")
+    );
     return this;
   };
   API.__private__.line = API.line = function(x1, y1, x2, y22, style) {
@@ -60241,7 +60508,15 @@ function jsPDF(options) {
     if (apiMode === ApiMode.COMPAT) {
       h2 = -h2;
     }
-    out([hpf(scale3(x2)), hpf(transformScaleY(y3)), hpf(scale3(w)), hpf(scale3(h2)), "re"].join(" "));
+    out(
+      [
+        hpf(scale3(x2)),
+        hpf(transformScaleY(y3)),
+        hpf(scale3(w)),
+        hpf(scale3(h2)),
+        "re"
+      ].join(" ")
+    );
     putStyle(style);
     return this;
   };
@@ -60275,7 +60550,16 @@ function jsPDF(options) {
     rx2 = Math.min(rx2, w * 0.5);
     ry2 = Math.min(ry2, h2 * 0.5);
     this.lines(
-      [[w - 2 * rx2, 0], [rx2 * MyArc, 0, rx2, ry2 - ry2 * MyArc, rx2, ry2], [0, h2 - 2 * ry2], [0, ry2 * MyArc, -(rx2 * MyArc), ry2, -rx2, ry2], [-w + 2 * rx2, 0], [-(rx2 * MyArc), 0, -rx2, -(ry2 * MyArc), -rx2, -ry2], [0, -h2 + 2 * ry2], [0, -(ry2 * MyArc), rx2 * MyArc, -ry2, rx2, -ry2]],
+      [
+        [w - 2 * rx2, 0],
+        [rx2 * MyArc, 0, rx2, ry2 - ry2 * MyArc, rx2, ry2],
+        [0, h2 - 2 * ry2],
+        [0, ry2 * MyArc, -(rx2 * MyArc), ry2, -rx2, ry2],
+        [-w + 2 * rx2, 0],
+        [-(rx2 * MyArc), 0, -rx2, -(ry2 * MyArc), -rx2, -ry2],
+        [0, -h2 + 2 * ry2],
+        [0, -(ry2 * MyArc), rx2 * MyArc, -ry2, rx2, -ry2]
+      ],
       x2 + rx2,
       y3,
       // start of path
@@ -60331,7 +60615,12 @@ function jsPDF(options) {
     return list2;
   };
   API.addFont = function(postScriptName, fontName, fontStyle, fontWeight, encoding) {
-    var encodingOptions = ["StandardEncoding", "MacRomanEncoding", "Identity-H", "WinAnsiEncoding"];
+    var encodingOptions = [
+      "StandardEncoding",
+      "MacRomanEncoding",
+      "Identity-H",
+      "WinAnsiEncoding"
+    ];
     if (arguments[3] && encodingOptions.indexOf(arguments[3]) !== -1) {
       encoding = arguments[3];
     } else if (arguments[3] && encodingOptions.indexOf(arguments[3]) == -1) {
@@ -60477,7 +60766,9 @@ function jsPDF(options) {
   API.__private__.setLineCap = API.setLineCap = function(style) {
     var id = API.CapJoinStyles[style];
     if (id === void 0) {
-      throw new Error("Line cap style of '" + style + "' is not recognized. See or extend .CapJoinStyles property for valid styles");
+      throw new Error(
+        "Line cap style of '" + style + "' is not recognized. See or extend .CapJoinStyles property for valid styles"
+      );
     }
     lineCapID = id;
     out(id + " J");
@@ -60487,7 +60778,9 @@ function jsPDF(options) {
   API.__private__.setLineJoin = API.setLineJoin = function(style) {
     var id = API.CapJoinStyles[style];
     if (id === void 0) {
-      throw new Error("Line join style of '" + style + "' is not recognized. See or extend .CapJoinStyles property for valid styles");
+      throw new Error(
+        "Line join style of '" + style + "' is not recognized. See or extend .CapJoinStyles property for valid styles"
+      );
     }
     lineJoinID = id;
     out(id + " j");
@@ -60737,12 +61030,18 @@ function jsPDF(options) {
   for (var plugin in jsPDF.API) {
     if (jsPDF.API.hasOwnProperty(plugin)) {
       if (plugin === "events" && jsPDF.API.events.length) {
+        ;
         (function(events2, newEvents) {
           var eventname, handler_and_args, i2;
           for (i2 = newEvents.length - 1; i2 !== -1; i2--) {
             eventname = newEvents[i2][0];
             handler_and_args = newEvents[i2][1];
-            events2.subscribe.apply(events2, [eventname].concat(typeof handler_and_args === "function" ? [handler_and_args] : handler_and_args));
+            events2.subscribe.apply(
+              events2,
+              [eventname].concat(
+                typeof handler_and_args === "function" ? [handler_and_args] : handler_and_args
+              )
+            );
           }
         })(events, jsPDF.API.events);
       } else {
@@ -60894,7 +61193,9 @@ var clearBit = jsPDFAPI.__acroform__.clearBit = function(number, bitPosition) {
   number = number || 0;
   bitPosition = bitPosition || 0;
   if (isNaN(number) || isNaN(bitPosition)) {
-    throw new Error("Invalid arguments passed to jsPDF.API.__acroform__.clearBit");
+    throw new Error(
+      "Invalid arguments passed to jsPDF.API.__acroform__.clearBit"
+    );
   }
   var bitMask = 1 << bitPosition;
   number &= ~bitMask;
@@ -60908,19 +61209,25 @@ var getBit = jsPDFAPI.__acroform__.getBit = function(number, bitPosition) {
 };
 var getBitForPdf = jsPDFAPI.__acroform__.getBitForPdf = function(number, bitPosition) {
   if (isNaN(number) || isNaN(bitPosition)) {
-    throw new Error("Invalid arguments passed to jsPDF.API.__acroform__.getBitForPdf");
+    throw new Error(
+      "Invalid arguments passed to jsPDF.API.__acroform__.getBitForPdf"
+    );
   }
   return getBit(number, bitPosition - 1);
 };
 var setBitForPdf = jsPDFAPI.__acroform__.setBitForPdf = function(number, bitPosition) {
   if (isNaN(number) || isNaN(bitPosition)) {
-    throw new Error("Invalid arguments passed to jsPDF.API.__acroform__.setBitForPdf");
+    throw new Error(
+      "Invalid arguments passed to jsPDF.API.__acroform__.setBitForPdf"
+    );
   }
   return setBit(number, bitPosition - 1);
 };
 var clearBitForPdf = jsPDFAPI.__acroform__.clearBitForPdf = function(number, bitPosition) {
   if (isNaN(number) || isNaN(bitPosition)) {
-    throw new Error("Invalid arguments passed to jsPDF.API.__acroform__.clearBitForPdf");
+    throw new Error(
+      "Invalid arguments passed to jsPDF.API.__acroform__.clearBitForPdf"
+    );
   }
   return clearBit(number, bitPosition - 1);
 };
@@ -60936,7 +61243,12 @@ var calculateCoordinates = jsPDFAPI.__acroform__.calculateCoordinates = function
   coordinates.lowerLeft_Y = getVerticalCoordinate(y3 + h2) || 0;
   coordinates.upperRight_X = getHorizontalCoordinate(x2 + w) || 0;
   coordinates.upperRight_Y = getVerticalCoordinate(y3) || 0;
-  return [Number(f2(coordinates.lowerLeft_X)), Number(f2(coordinates.lowerLeft_Y)), Number(f2(coordinates.upperRight_X)), Number(f2(coordinates.upperRight_Y))];
+  return [
+    Number(f2(coordinates.lowerLeft_X)),
+    Number(f2(coordinates.lowerLeft_Y)),
+    Number(f2(coordinates.upperRight_X)),
+    Number(f2(coordinates.upperRight_Y))
+  ];
 };
 var calculateAppearanceStream = function calculateAppearanceStream2(formObject) {
   if (formObject.appearanceStreamContent) {
@@ -60948,7 +61260,10 @@ var calculateAppearanceStream = function calculateAppearanceStream2(formObject) 
   var stream = [];
   var text4 = formObject._V || formObject.DV;
   var calcRes = calculateX(formObject, text4);
-  var fontKey = formObject.scope.internal.getFont(formObject.fontName, formObject.fontStyle).id;
+  var fontKey = formObject.scope.internal.getFont(
+    formObject.fontName,
+    formObject.fontStyle
+  ).id;
   stream.push("/Tx BMC");
   stream.push("q");
   stream.push("BT");
@@ -61107,7 +61422,10 @@ var calculateX = function calculateX2(formObject, text4) {
   return returnValue;
 };
 var calculateFontSpace = function calculateFontSpace2(text4, formObject, fontSize) {
-  var font = formObject.scope.internal.getFont(formObject.fontName, formObject.fontStyle);
+  var font = formObject.scope.internal.getFont(
+    formObject.fontName,
+    formObject.fontStyle
+  );
   var width2 = formObject.scope.getStringUnitWidth(text4, {
     font,
     fontSize: parseFloat(fontSize),
@@ -61159,7 +61477,9 @@ var putForm = function putForm2(formObject) {
     formObject.scope.internal.acroformPlugin.printedOut = false;
     formObject.scope.internal.acroformPlugin.acroFormDictionaryRoot = null;
   }
-  formObject.scope.internal.acroformPlugin.acroFormDictionaryRoot.Fields.push(formObject);
+  formObject.scope.internal.acroformPlugin.acroFormDictionaryRoot.Fields.push(
+    formObject
+  );
 };
 var createAnnotationReference = function createAnnotationReference2(object, scope) {
   var options = {
@@ -61175,20 +61495,27 @@ var createAnnotationReference = function createAnnotationReference2(object, scop
 };
 var putCatalogCallback = function putCatalogCallback2(scope) {
   if (typeof scope.internal.acroformPlugin.acroFormDictionaryRoot !== "undefined") {
-    scope.internal.write("/AcroForm " + scope.internal.acroformPlugin.acroFormDictionaryRoot.objId + " 0 R");
+    scope.internal.write(
+      "/AcroForm " + scope.internal.acroformPlugin.acroFormDictionaryRoot.objId + " 0 R"
+    );
   } else {
     throw new Error("putCatalogCallback: Root missing.");
   }
 };
 var AcroFormDictionaryCallback = function AcroFormDictionaryCallback2(scope) {
-  scope.internal.events.unsubscribe(scope.internal.acroformPlugin.acroFormDictionaryRoot._eventID);
+  scope.internal.events.unsubscribe(
+    scope.internal.acroformPlugin.acroFormDictionaryRoot._eventID
+  );
   delete scope.internal.acroformPlugin.acroFormDictionaryRoot._eventID;
   scope.internal.acroformPlugin.printedOut = true;
 };
 var createFieldCallback = function createFieldCallback2(fieldArray, scope) {
   var standardFields = !fieldArray;
   if (!fieldArray) {
-    scope.internal.newObjectDeferredBegin(scope.internal.acroformPlugin.acroFormDictionaryRoot.objId, true);
+    scope.internal.newObjectDeferredBegin(
+      scope.internal.acroformPlugin.acroFormDictionaryRoot.objId,
+      true
+    );
     scope.internal.acroformPlugin.acroFormDictionaryRoot.putStream();
   }
   fieldArray = fieldArray || scope.internal.acroformPlugin.acroFormDictionaryRoot.Kids;
@@ -61278,7 +61605,9 @@ var initializeAcroForm = function initializeAcroForm2(scope, formObject) {
   formObject.scope = scope;
   if (scope.internal !== void 0 && (scope.internal.acroformPlugin === void 0 || scope.internal.acroformPlugin.isInitialized === false)) {
     AcroFormField.FieldNum = 0;
-    scope.internal.acroformPlugin = JSON.parse(JSON.stringify(acroformPluginTemplate));
+    scope.internal.acroformPlugin = JSON.parse(
+      JSON.stringify(acroformPluginTemplate)
+    );
     if (scope.internal.acroformPlugin.acroFormDictionaryRoot) {
       throw new Error("Exception while creating AcroformDictionary");
     }
@@ -61330,7 +61659,9 @@ var arrayToPdfArray = jsPDFAPI.__acroform__.arrayToPdfArray = function(array2, o
     content3 += "]";
     return content3;
   }
-  throw new Error("Invalid argument passed to jsPDF.__acroform__.arrayToPdfArray");
+  throw new Error(
+    "Invalid argument passed to jsPDF.__acroform__.arrayToPdfArray"
+  );
 };
 function getMatches(string3, regex, index3) {
   index3 || (index3 = 1);
@@ -61529,7 +61860,9 @@ var AcroFormField = function AcroFormField2() {
       if (!isNaN(value)) {
         _F = value;
       } else {
-        throw new Error('Invalid value "' + value + '" for attribute F supplied.');
+        throw new Error(
+          'Invalid value "' + value + '" for attribute F supplied.'
+        );
       }
     }
   });
@@ -61558,7 +61891,9 @@ var AcroFormField = function AcroFormField2() {
       if (!isNaN(value)) {
         _Ff = value;
       } else {
-        throw new Error('Invalid value "' + value + '" for attribute Ff supplied.');
+        throw new Error(
+          'Invalid value "' + value + '" for attribute Ff supplied.'
+        );
       }
     }
   });
@@ -61648,7 +61983,9 @@ var AcroFormField = function AcroFormField2() {
           _FT = value;
           break;
         default:
-          throw new Error('Invalid value "' + value + '" for attribute FT supplied.');
+          throw new Error(
+            'Invalid value "' + value + '" for attribute FT supplied.'
+          );
       }
     }
   });
@@ -61964,7 +62301,9 @@ var AcroFormField = function AcroFormField2() {
       if ([0, 1, 2].indexOf(value) !== -1) {
         _Q = value;
       } else {
-        throw new Error('Invalid value "' + value + '" for attribute Q supplied.');
+        throw new Error(
+          'Invalid value "' + value + '" for attribute Q supplied.'
+        );
       }
     }
   });
@@ -62410,17 +62749,23 @@ var AcroFormChildClass = function AcroFormChildClass2() {
   this.caption = "l";
   this.appearanceState = "Off";
   this._AppearanceType = AcroFormAppearance.RadioButton.Circle;
-  this.appearanceStreamContent = this._AppearanceType.createAppearanceStream(this.optionName);
+  this.appearanceStreamContent = this._AppearanceType.createAppearanceStream(
+    this.optionName
+  );
 };
 inherit(AcroFormChildClass, AcroFormField);
 AcroFormRadioButton.prototype.setAppearance = function(appearance) {
   if (!("createAppearanceStream" in appearance && "getCA" in appearance)) {
-    throw new Error("Couldn't assign Appearance to RadioButton. Appearance was Invalid!");
+    throw new Error(
+      "Couldn't assign Appearance to RadioButton. Appearance was Invalid!"
+    );
   }
   for (var objId in this.Kids) {
     if (this.Kids.hasOwnProperty(objId)) {
       var child = this.Kids[objId];
-      child.appearanceStreamContent = appearance.createAppearanceStream(child.optionName);
+      child.appearanceStreamContent = appearance.createAppearanceStream(
+        child.optionName
+      );
       child.caption = appearance.getCA();
     }
   }
@@ -62604,16 +62949,25 @@ var AcroFormAppearance = {
       var xobj = createFormXObject(formObject);
       xobj.scope = formObject.scope;
       var stream = [];
-      var fontKey = formObject.scope.internal.getFont(formObject.fontName, formObject.fontStyle).id;
-      var encodedColor = formObject.scope.__private__.encodeColorString(formObject.color);
+      var fontKey = formObject.scope.internal.getFont(
+        formObject.fontName,
+        formObject.fontStyle
+      ).id;
+      var encodedColor = formObject.scope.__private__.encodeColorString(
+        formObject.color
+      );
       var calcRes = calculateX(formObject, formObject.caption);
       stream.push("0.749023 g");
-      stream.push("0 0 " + f2(AcroFormAppearance.internal.getWidth(formObject)) + " " + f2(AcroFormAppearance.internal.getHeight(formObject)) + " re");
+      stream.push(
+        "0 0 " + f2(AcroFormAppearance.internal.getWidth(formObject)) + " " + f2(AcroFormAppearance.internal.getHeight(formObject)) + " re"
+      );
       stream.push("f");
       stream.push("BMC");
       stream.push("q");
       stream.push("0 0 1 rg");
-      stream.push("/" + fontKey + " " + f2(calcRes.fontSize) + " Tf " + encodedColor);
+      stream.push(
+        "/" + fontKey + " " + f2(calcRes.fontSize) + " Tf " + encodedColor
+      );
       stream.push("BT");
       stream.push(calcRes.text);
       stream.push("ET");
@@ -62625,8 +62979,13 @@ var AcroFormAppearance = {
     YesNormal: function YesNormal(formObject) {
       var xobj = createFormXObject(formObject);
       xobj.scope = formObject.scope;
-      var fontKey = formObject.scope.internal.getFont(formObject.fontName, formObject.fontStyle).id;
-      var encodedColor = formObject.scope.__private__.encodeColorString(formObject.color);
+      var fontKey = formObject.scope.internal.getFont(
+        formObject.fontName,
+        formObject.fontStyle
+      ).id;
+      var encodedColor = formObject.scope.__private__.encodeColorString(
+        formObject.color
+      );
       var stream = [];
       var height2 = AcroFormAppearance.internal.getHeight(formObject);
       var width2 = AcroFormAppearance.internal.getWidth(formObject);
@@ -62641,7 +63000,9 @@ var AcroFormAppearance = {
       stream.push("n");
       stream.push("0 g");
       stream.push("BT");
-      stream.push("/" + fontKey + " " + f2(calcRes.fontSize) + " Tf " + encodedColor);
+      stream.push(
+        "/" + fontKey + " " + f2(calcRes.fontSize) + " Tf " + encodedColor
+      );
       stream.push(calcRes.text);
       stream.push("ET");
       stream.push("Q");
@@ -62658,7 +63019,9 @@ var AcroFormAppearance = {
       xobj.scope = formObject.scope;
       var stream = [];
       stream.push("0.749023 g");
-      stream.push("0 0 " + f2(AcroFormAppearance.internal.getWidth(formObject)) + " " + f2(AcroFormAppearance.internal.getHeight(formObject)) + " re");
+      stream.push(
+        "0 0 " + f2(AcroFormAppearance.internal.getWidth(formObject)) + " " + f2(AcroFormAppearance.internal.getHeight(formObject)) + " re"
+      );
       stream.push("f");
       xobj.stream = stream.join("\n");
       return xobj;
@@ -62689,12 +63052,22 @@ var AcroFormAppearance = {
         var c3 = AcroFormAppearance.internal.Bezier_C;
         var DotRadiusBezier = Number((DotRadius * c3).toFixed(5));
         stream.push("q");
-        stream.push("1 0 0 1 " + f5(AcroFormAppearance.internal.getWidth(formObject) / 2) + " " + f5(AcroFormAppearance.internal.getHeight(formObject) / 2) + " cm");
+        stream.push(
+          "1 0 0 1 " + f5(AcroFormAppearance.internal.getWidth(formObject) / 2) + " " + f5(AcroFormAppearance.internal.getHeight(formObject) / 2) + " cm"
+        );
         stream.push(DotRadius + " 0 m");
-        stream.push(DotRadius + " " + DotRadiusBezier + " " + DotRadiusBezier + " " + DotRadius + " 0 " + DotRadius + " c");
-        stream.push("-" + DotRadiusBezier + " " + DotRadius + " -" + DotRadius + " " + DotRadiusBezier + " -" + DotRadius + " 0 c");
-        stream.push("-" + DotRadius + " -" + DotRadiusBezier + " -" + DotRadiusBezier + " -" + DotRadius + " 0 -" + DotRadius + " c");
-        stream.push(DotRadiusBezier + " -" + DotRadius + " " + DotRadius + " -" + DotRadiusBezier + " " + DotRadius + " 0 c");
+        stream.push(
+          DotRadius + " " + DotRadiusBezier + " " + DotRadiusBezier + " " + DotRadius + " 0 " + DotRadius + " c"
+        );
+        stream.push(
+          "-" + DotRadiusBezier + " " + DotRadius + " -" + DotRadius + " " + DotRadiusBezier + " -" + DotRadius + " 0 c"
+        );
+        stream.push(
+          "-" + DotRadius + " -" + DotRadiusBezier + " -" + DotRadiusBezier + " -" + DotRadius + " 0 -" + DotRadius + " c"
+        );
+        stream.push(
+          DotRadiusBezier + " -" + DotRadius + " " + DotRadius + " -" + DotRadiusBezier + " " + DotRadius + " 0 c"
+        );
         stream.push("f");
         stream.push("Q");
         xobj.stream = stream.join("\n");
@@ -62708,25 +63081,43 @@ var AcroFormAppearance = {
         DotRadius = Number((DotRadius * 0.9).toFixed(5));
         var k = Number((DotRadius * 2).toFixed(5));
         var kc = Number((k * AcroFormAppearance.internal.Bezier_C).toFixed(5));
-        var dc = Number((DotRadius * AcroFormAppearance.internal.Bezier_C).toFixed(5));
+        var dc = Number(
+          (DotRadius * AcroFormAppearance.internal.Bezier_C).toFixed(5)
+        );
         stream.push("0.749023 g");
         stream.push("q");
-        stream.push("1 0 0 1 " + f5(AcroFormAppearance.internal.getWidth(formObject) / 2) + " " + f5(AcroFormAppearance.internal.getHeight(formObject) / 2) + " cm");
+        stream.push(
+          "1 0 0 1 " + f5(AcroFormAppearance.internal.getWidth(formObject) / 2) + " " + f5(AcroFormAppearance.internal.getHeight(formObject) / 2) + " cm"
+        );
         stream.push(k + " 0 m");
         stream.push(k + " " + kc + " " + kc + " " + k + " 0 " + k + " c");
-        stream.push("-" + kc + " " + k + " -" + k + " " + kc + " -" + k + " 0 c");
-        stream.push("-" + k + " -" + kc + " -" + kc + " -" + k + " 0 -" + k + " c");
+        stream.push(
+          "-" + kc + " " + k + " -" + k + " " + kc + " -" + k + " 0 c"
+        );
+        stream.push(
+          "-" + k + " -" + kc + " -" + kc + " -" + k + " 0 -" + k + " c"
+        );
         stream.push(kc + " -" + k + " " + k + " -" + kc + " " + k + " 0 c");
         stream.push("f");
         stream.push("Q");
         stream.push("0 g");
         stream.push("q");
-        stream.push("1 0 0 1 " + f5(AcroFormAppearance.internal.getWidth(formObject) / 2) + " " + f5(AcroFormAppearance.internal.getHeight(formObject) / 2) + " cm");
+        stream.push(
+          "1 0 0 1 " + f5(AcroFormAppearance.internal.getWidth(formObject) / 2) + " " + f5(AcroFormAppearance.internal.getHeight(formObject) / 2) + " cm"
+        );
         stream.push(DotRadius + " 0 m");
-        stream.push("" + DotRadius + " " + dc + " " + dc + " " + DotRadius + " 0 " + DotRadius + " c");
-        stream.push("-" + dc + " " + DotRadius + " -" + DotRadius + " " + dc + " -" + DotRadius + " 0 c");
-        stream.push("-" + DotRadius + " -" + dc + " -" + dc + " -" + DotRadius + " 0 -" + DotRadius + " c");
-        stream.push(dc + " -" + DotRadius + " " + DotRadius + " -" + dc + " " + DotRadius + " 0 c");
+        stream.push(
+          "" + DotRadius + " " + dc + " " + dc + " " + DotRadius + " 0 " + DotRadius + " c"
+        );
+        stream.push(
+          "-" + dc + " " + DotRadius + " -" + DotRadius + " " + dc + " -" + DotRadius + " 0 c"
+        );
+        stream.push(
+          "-" + DotRadius + " -" + dc + " -" + dc + " -" + DotRadius + " 0 -" + DotRadius + " c"
+        );
+        stream.push(
+          dc + " -" + DotRadius + " " + DotRadius + " -" + dc + " " + DotRadius + " 0 c"
+        );
         stream.push("f");
         stream.push("Q");
         xobj.stream = stream.join("\n");
@@ -62742,11 +63133,17 @@ var AcroFormAppearance = {
         var kc = Number((k * AcroFormAppearance.internal.Bezier_C).toFixed(5));
         stream.push("0.749023 g");
         stream.push("q");
-        stream.push("1 0 0 1 " + f5(AcroFormAppearance.internal.getWidth(formObject) / 2) + " " + f5(AcroFormAppearance.internal.getHeight(formObject) / 2) + " cm");
+        stream.push(
+          "1 0 0 1 " + f5(AcroFormAppearance.internal.getWidth(formObject) / 2) + " " + f5(AcroFormAppearance.internal.getHeight(formObject) / 2) + " cm"
+        );
         stream.push(k + " 0 m");
         stream.push(k + " " + kc + " " + kc + " " + k + " 0 " + k + " c");
-        stream.push("-" + kc + " " + k + " -" + k + " " + kc + " -" + k + " 0 c");
-        stream.push("-" + k + " -" + kc + " -" + kc + " -" + k + " 0 -" + k + " c");
+        stream.push(
+          "-" + kc + " " + k + " -" + k + " " + kc + " -" + k + " 0 c"
+        );
+        stream.push(
+          "-" + k + " -" + kc + " -" + kc + " -" + k + " 0 -" + k + " c"
+        );
         stream.push(kc + " -" + k + " " + k + " -" + kc + " " + k + " 0 c");
         stream.push("f");
         stream.push("Q");
@@ -62782,7 +63179,9 @@ var AcroFormAppearance = {
         var stream = [];
         var cross = AcroFormAppearance.internal.calculateCross(formObject);
         stream.push("q");
-        stream.push("1 1 " + f2(AcroFormAppearance.internal.getWidth(formObject) - 2) + " " + f2(AcroFormAppearance.internal.getHeight(formObject) - 2) + " re");
+        stream.push(
+          "1 1 " + f2(AcroFormAppearance.internal.getWidth(formObject) - 2) + " " + f2(AcroFormAppearance.internal.getHeight(formObject) - 2) + " re"
+        );
         stream.push("W");
         stream.push("n");
         stream.push(f2(cross.x1.x) + " " + f2(cross.x1.y) + " m");
@@ -62800,10 +63199,14 @@ var AcroFormAppearance = {
         var cross = AcroFormAppearance.internal.calculateCross(formObject);
         var stream = [];
         stream.push("0.749023 g");
-        stream.push("0 0 " + f2(AcroFormAppearance.internal.getWidth(formObject)) + " " + f2(AcroFormAppearance.internal.getHeight(formObject)) + " re");
+        stream.push(
+          "0 0 " + f2(AcroFormAppearance.internal.getWidth(formObject)) + " " + f2(AcroFormAppearance.internal.getHeight(formObject)) + " re"
+        );
         stream.push("f");
         stream.push("q");
-        stream.push("1 1 " + f2(AcroFormAppearance.internal.getWidth(formObject) - 2) + " " + f2(AcroFormAppearance.internal.getHeight(formObject) - 2) + " re");
+        stream.push(
+          "1 1 " + f2(AcroFormAppearance.internal.getWidth(formObject) - 2) + " " + f2(AcroFormAppearance.internal.getHeight(formObject) - 2) + " re"
+        );
         stream.push("W");
         stream.push("n");
         stream.push(f2(cross.x1.x) + " " + f2(cross.x1.y) + " m");
@@ -62820,7 +63223,9 @@ var AcroFormAppearance = {
         xobj.scope = formObject.scope;
         var stream = [];
         stream.push("0.749023 g");
-        stream.push("0 0 " + f2(AcroFormAppearance.internal.getWidth(formObject)) + " " + f2(AcroFormAppearance.internal.getHeight(formObject)) + " re");
+        stream.push(
+          "0 0 " + f2(AcroFormAppearance.internal.getWidth(formObject)) + " " + f2(AcroFormAppearance.internal.getHeight(formObject)) + " re"
+        );
         stream.push("f");
         xobj.stream = stream.join("\n");
         return xobj;
@@ -62833,8 +63238,13 @@ var AcroFormAppearance = {
    * @returns {AcroFormXObject}
    */
   createDefaultAppearanceStream: function createDefaultAppearanceStream(formObject) {
-    var fontKey = formObject.scope.internal.getFont(formObject.fontName, formObject.fontStyle).id;
-    var encodedColor = formObject.scope.__private__.encodeColorString(formObject.color);
+    var fontKey = formObject.scope.internal.getFont(
+      formObject.fontName,
+      formObject.fontStyle
+    ).id;
+    var encodedColor = formObject.scope.__private__.encodeColorString(
+      formObject.color
+    );
     var fontSize = formObject.fontSize;
     var result = "/" + fontKey + " " + fontSize + " Tf " + encodedColor;
     return result;
@@ -62951,9 +63361,34 @@ var AcroForm = jsPDF.AcroForm;
       //Intel
     ],
     JPEG: [
-      [255, 216, 255, 224, void 0, void 0, 74, 70, 73, 70, 0],
+      [
+        255,
+        216,
+        255,
+        224,
+        void 0,
+        void 0,
+        74,
+        70,
+        73,
+        70,
+        0
+      ],
       //JFIF
-      [255, 216, 255, 225, void 0, void 0, 69, 120, 105, 102, 0, 0],
+      [
+        255,
+        216,
+        255,
+        225,
+        void 0,
+        void 0,
+        69,
+        120,
+        105,
+        102,
+        0,
+        0
+      ],
       //Exif
       [255, 216, 255, 219],
       //JPEG RAW
@@ -62963,7 +63398,22 @@ var AcroForm = jsPDF.AcroForm;
     JPEG2000: [[0, 0, 0, 12, 106, 80, 32, 32]],
     GIF87a: [[71, 73, 70, 56, 55, 97]],
     GIF89a: [[71, 73, 70, 56, 57, 97]],
-    WEBP: [[82, 73, 70, 70, void 0, void 0, void 0, void 0, 87, 69, 66, 80]],
+    WEBP: [
+      [
+        82,
+        73,
+        70,
+        70,
+        void 0,
+        void 0,
+        void 0,
+        void 0,
+        87,
+        69,
+        66,
+        80
+      ]
+    ],
     BMP: [
       [66, 77],
       //BM - Windows 3.1x, 95, NT, ... etc.
@@ -63201,7 +63651,9 @@ var AcroForm = jsPDF.AcroForm;
     }
     if (element2.nodeName === "CANVAS") {
       if (element2.width === 0 || element2.height === 0) {
-        throw new Error("Given canvas must have data. Canvas width: " + element2.width + ", height: " + element2.height);
+        throw new Error(
+          "Given canvas must have data. Canvas width: " + element2.width + ", height: " + element2.height
+        );
       }
       var mimeType;
       switch (format) {
@@ -63262,15 +63714,37 @@ var AcroForm = jsPDF.AcroForm;
       var f4 = function f42(number) {
         return number.toFixed(4);
       };
-      var rotationTransformationMatrix = [f4(c3), f4(s2), f4(s2 * -1), f4(c3), 0, 0, "cm"];
+      var rotationTransformationMatrix = [
+        f4(c3),
+        f4(s2),
+        f4(s2 * -1),
+        f4(c3),
+        0,
+        0,
+        "cm"
+      ];
     }
     this.internal.write("q");
     if (rotation) {
-      this.internal.write([1, "0", "0", 1, coord(x2), vcoord(y3 + height2), "cm"].join(" "));
+      this.internal.write(
+        [1, "0", "0", 1, coord(x2), vcoord(y3 + height2), "cm"].join(" ")
+      );
       this.internal.write(rotationTransformationMatrix.join(" "));
-      this.internal.write([coord(width2), "0", "0", coord(height2), "0", "0", "cm"].join(" "));
+      this.internal.write(
+        [coord(width2), "0", "0", coord(height2), "0", "0", "cm"].join(" ")
+      );
     } else {
-      this.internal.write([coord(width2), "0", "0", coord(height2), coord(x2), vcoord(y3 + height2), "cm"].join(" "));
+      this.internal.write(
+        [
+          coord(width2),
+          "0",
+          "0",
+          coord(height2),
+          coord(x2),
+          vcoord(y3 + height2),
+          "cm"
+        ].join(" ")
+      );
     }
     if (this.isAdvancedAPI()) {
       this.internal.write([1, 0, 0, -1, 0, 0, "cm"].join(" "));
@@ -63335,10 +63809,14 @@ var AcroForm = jsPDF.AcroForm;
     if (possibleBase64String.length % 4 !== 0) {
       result = false;
     }
-    if (/^[A-Za-z0-9+/]+$/.test(possibleBase64String.substr(0, possibleBase64String.length - 2)) === false) {
+    if (/^[A-Za-z0-9+/]+$/.test(
+      possibleBase64String.substr(0, possibleBase64String.length - 2)
+    ) === false) {
       result = false;
     }
-    if (/^[A-Za-z0-9/][A-Za-z0-9+/]|[A-Za-z0-9+/]=|==$/.test(possibleBase64String.substr(-2)) === false) {
+    if (/^[A-Za-z0-9/][A-Za-z0-9+/]|[A-Za-z0-9+/]=|==$/.test(
+      possibleBase64String.substr(-2)
+    ) === false) {
       result = false;
     }
     return result;
@@ -63348,7 +63826,9 @@ var AcroForm = jsPDF.AcroForm;
     var dataUrlParts = dataUrl.split("base64,");
     var result = null;
     if (dataUrlParts.length === 2) {
-      var extractedInfo = /^data:(\w*\/\w*);*(charset=(?!charset=)[\w=-]*)*;*$/.exec(dataUrlParts[0]);
+      var extractedInfo = /^data:(\w*\/\w*);*(charset=(?!charset=)[\w=-]*)*;*$/.exec(
+        dataUrlParts[0]
+      );
       if (Array.isArray(extractedInfo)) {
         result = {
           mimeType: extractedInfo[1],
@@ -63380,7 +63860,10 @@ var AcroForm = jsPDF.AcroForm;
     var out = "";
     var buf = isArrayBufferView(buffer) ? buffer : new Uint8Array(buffer);
     for (var i2 = 0; i2 < buf.length; i2 += ARRAY_APPLY_BATCH) {
-      out += String.fromCharCode.apply(null, buf.subarray(i2, i2 + ARRAY_APPLY_BATCH));
+      out += String.fromCharCode.apply(
+        null,
+        buf.subarray(i2, i2 + ARRAY_APPLY_BATCH)
+      );
     }
     return out;
   };
@@ -63426,7 +63909,13 @@ var AcroForm = jsPDF.AcroForm;
       throw new Error("Invalid coordinates passed to jsPDF.addImage");
     }
     initialize.call(this);
-    var image = processImageData.call(this, imageData, format, alias, compression);
+    var image = processImageData.call(
+      this,
+      imageData,
+      format,
+      alias,
+      compression
+    );
     writeImageToPDF.call(this, x2, y3, w, h2, image, rotation);
     return this;
   };
@@ -63449,7 +63938,9 @@ var AcroForm = jsPDF.AcroForm;
     }
     format = getImageFileTypeByImageData(imageData, format);
     if (!isImageTypeSupported(format)) {
-      throw new Error("addImage does not support files of type '" + format + "', please ensure that a plugin for '" + format + "' support is added.");
+      throw new Error(
+        "addImage does not support files of type '" + format + "', please ensure that a plugin for '" + format + "' support is added."
+      );
     }
     if (notDefined(alias)) {
       alias = generateAliasFromImageData(imageData);
@@ -63462,7 +63953,13 @@ var AcroForm = jsPDF.AcroForm;
           imageData = binaryStringToUint8Array(imageData);
         }
       }
-      result = this["process" + format.toUpperCase()](imageData, getImageIndex.call(this), alias, checkCompressValue(compression), dataAsBinaryString);
+      result = this["process" + format.toUpperCase()](
+        imageData,
+        getImageIndex.call(this),
+        alias,
+        checkCompressValue(compression),
+        dataAsBinaryString
+      );
     }
     if (!result) {
       throw new Error("An unknown error occurred whilst processing the image.");
@@ -63482,9 +63979,13 @@ var AcroForm = jsPDF.AcroForm;
       } catch (e2) {
         if (throwError) {
           if (!validateStringAsBase64(rawData)) {
-            throw new Error("Supplied Data is not a valid base64-String jsPDF.convertBase64ToBinaryString ");
+            throw new Error(
+              "Supplied Data is not a valid base64-String jsPDF.convertBase64ToBinaryString "
+            );
           } else {
-            throw new Error("atob-Error in jsPDF.convertBase64ToBinaryString " + e2.message);
+            throw new Error(
+              "atob-Error in jsPDF.convertBase64ToBinaryString " + e2.message
+            );
           }
         }
       }
@@ -63507,7 +64008,9 @@ var AcroForm = jsPDF.AcroForm;
     }
     format = getImageFileTypeByImageData(imageData);
     if (!isImageTypeSupported(format)) {
-      throw new Error("addImage does not support files of type '" + format + "', please ensure that a plugin for '" + format + "' support is added.");
+      throw new Error(
+        "addImage does not support files of type '" + format + "', please ensure that a plugin for '" + format + "' support is added."
+      );
     }
     if (supportsArrayBuffer() && !(imageData instanceof Uint8Array)) {
       imageData = binaryStringToUint8Array(imageData);
@@ -63528,129 +64031,143 @@ var AcroForm = jsPDF.AcroForm;
       }
     }
   };
-  jsPDF.API.events.push(["addPage", function(addPageData) {
-    var pageInfo = this.internal.getPageInfo(addPageData.pageNumber);
-    pageInfo.pageContext.annotations = [];
-  }]);
-  jsPDFAPI2.events.push(["putPage", function(putPageData) {
-    var getHorizontalCoordinateString = this.internal.getCoordinateString;
-    var getVerticalCoordinateString = this.internal.getVerticalCoordinateString;
-    var pageInfo = this.internal.getPageInfoByObjId(putPageData.objId);
-    var pageAnnos = putPageData.pageContext.annotations;
-    var anno, rect, line;
-    var found = false;
-    for (var a2 = 0; a2 < pageAnnos.length && !found; a2++) {
-      anno = pageAnnos[a2];
-      switch (anno.type) {
-        case "link":
-          if (notEmpty(anno.options.url) || notEmpty(anno.options.pageNumber)) {
+  jsPDF.API.events.push([
+    "addPage",
+    function(addPageData) {
+      var pageInfo = this.internal.getPageInfo(addPageData.pageNumber);
+      pageInfo.pageContext.annotations = [];
+    }
+  ]);
+  jsPDFAPI2.events.push([
+    "putPage",
+    function(putPageData) {
+      var getHorizontalCoordinateString = this.internal.getCoordinateString;
+      var getVerticalCoordinateString = this.internal.getVerticalCoordinateString;
+      var pageInfo = this.internal.getPageInfoByObjId(putPageData.objId);
+      var pageAnnos = putPageData.pageContext.annotations;
+      var anno, rect, line;
+      var found = false;
+      for (var a2 = 0; a2 < pageAnnos.length && !found; a2++) {
+        anno = pageAnnos[a2];
+        switch (anno.type) {
+          case "link":
+            if (notEmpty(anno.options.url) || notEmpty(anno.options.pageNumber)) {
+              found = true;
+            }
+            break;
+          case "reference":
+          case "text":
+          case "freetext":
             found = true;
-          }
-          break;
-        case "reference":
-        case "text":
-        case "freetext":
-          found = true;
-          break;
+            break;
+        }
       }
-    }
-    if (found == false) {
-      return;
-    }
-    this.internal.write("/Annots [");
-    for (var i2 = 0; i2 < pageAnnos.length; i2++) {
-      anno = pageAnnos[i2];
-      var escape2 = this.internal.pdfEscape;
-      var encryptor = this.internal.getEncryptor(putPageData.objId);
-      switch (anno.type) {
-        case "reference":
-          this.internal.write(" " + anno.object.objId + " 0 R ");
-          break;
-        case "text":
-          var objText = this.internal.newAdditionalObject();
-          var objPopup = this.internal.newAdditionalObject();
-          var encryptorText = this.internal.getEncryptor(objText.objId);
-          var title = anno.title || "Note";
-          rect = "/Rect [" + getHorizontalCoordinateString(anno.bounds.x) + " " + getVerticalCoordinateString(anno.bounds.y + anno.bounds.h) + " " + getHorizontalCoordinateString(anno.bounds.x + anno.bounds.w) + " " + getVerticalCoordinateString(anno.bounds.y) + "] ";
-          line = "<</Type /Annot /Subtype /Text " + rect + "/Contents (" + escape2(encryptorText(anno.contents)) + ")";
-          line += " /Popup " + objPopup.objId + " 0 R";
-          line += " /P " + pageInfo.objId + " 0 R";
-          line += " /T (" + escape2(encryptorText(title)) + ") >>";
-          objText.content = line;
-          var parent = objText.objId + " 0 R";
-          var popoff = 30;
-          rect = "/Rect [" + getHorizontalCoordinateString(anno.bounds.x + popoff) + " " + getVerticalCoordinateString(anno.bounds.y + anno.bounds.h) + " " + getHorizontalCoordinateString(anno.bounds.x + anno.bounds.w + popoff) + " " + getVerticalCoordinateString(anno.bounds.y) + "] ";
-          line = "<</Type /Annot /Subtype /Popup " + rect + " /Parent " + parent;
-          if (anno.open) {
-            line += " /Open true";
-          }
-          line += " >>";
-          objPopup.content = line;
-          this.internal.write(objText.objId, "0 R", objPopup.objId, "0 R");
-          break;
-        case "freetext":
-          rect = "/Rect [" + getHorizontalCoordinateString(anno.bounds.x) + " " + getVerticalCoordinateString(anno.bounds.y) + " " + getHorizontalCoordinateString(anno.bounds.x + anno.bounds.w) + " " + getVerticalCoordinateString(anno.bounds.y + anno.bounds.h) + "] ";
-          var color = anno.color || "#000000";
-          line = "<</Type /Annot /Subtype /FreeText " + rect + "/Contents (" + escape2(encryptor(anno.contents)) + ")";
-          line += " /DS(font: Helvetica,sans-serif 12.0pt; text-align:left; color:#" + color + ")";
-          line += " /Border [0 0 0]";
-          line += " >>";
-          this.internal.write(line);
-          break;
-        case "link":
-          if (anno.options.name) {
-            var loc = this.annotations._nameMap[anno.options.name];
-            anno.options.pageNumber = loc.page;
-            anno.options.top = loc.y;
-          } else {
-            if (!anno.options.top) {
-              anno.options.top = 0;
+      if (found == false) {
+        return;
+      }
+      this.internal.write("/Annots [");
+      for (var i2 = 0; i2 < pageAnnos.length; i2++) {
+        anno = pageAnnos[i2];
+        var escape2 = this.internal.pdfEscape;
+        var encryptor = this.internal.getEncryptor(putPageData.objId);
+        switch (anno.type) {
+          case "reference":
+            this.internal.write(" " + anno.object.objId + " 0 R ");
+            break;
+          case "text":
+            var objText = this.internal.newAdditionalObject();
+            var objPopup = this.internal.newAdditionalObject();
+            var encryptorText = this.internal.getEncryptor(objText.objId);
+            var title = anno.title || "Note";
+            rect = "/Rect [" + getHorizontalCoordinateString(anno.bounds.x) + " " + getVerticalCoordinateString(anno.bounds.y + anno.bounds.h) + " " + getHorizontalCoordinateString(anno.bounds.x + anno.bounds.w) + " " + getVerticalCoordinateString(anno.bounds.y) + "] ";
+            line = "<</Type /Annot /Subtype /Text " + rect + "/Contents (" + escape2(encryptorText(anno.contents)) + ")";
+            line += " /Popup " + objPopup.objId + " 0 R";
+            line += " /P " + pageInfo.objId + " 0 R";
+            line += " /T (" + escape2(encryptorText(title)) + ") >>";
+            objText.content = line;
+            var parent = objText.objId + " 0 R";
+            var popoff = 30;
+            rect = "/Rect [" + getHorizontalCoordinateString(anno.bounds.x + popoff) + " " + getVerticalCoordinateString(anno.bounds.y + anno.bounds.h) + " " + getHorizontalCoordinateString(
+              anno.bounds.x + anno.bounds.w + popoff
+            ) + " " + getVerticalCoordinateString(anno.bounds.y) + "] ";
+            line = "<</Type /Annot /Subtype /Popup " + rect + " /Parent " + parent;
+            if (anno.open) {
+              line += " /Open true";
             }
-          }
-          rect = "/Rect [" + anno.finalBounds.x + " " + anno.finalBounds.y + " " + anno.finalBounds.w + " " + anno.finalBounds.h + "] ";
-          line = "";
-          if (anno.options.url) {
-            line = "<</Type /Annot /Subtype /Link " + rect + "/Border [0 0 0] /A <</S /URI /URI (" + escape2(encryptor(anno.options.url)) + ") >>";
-          } else if (anno.options.pageNumber) {
-            var info = this.internal.getPageInfo(anno.options.pageNumber);
-            line = "<</Type /Annot /Subtype /Link " + rect + "/Border [0 0 0] /Dest [" + info.objId + " 0 R";
-            anno.options.magFactor = anno.options.magFactor || "XYZ";
-            switch (anno.options.magFactor) {
-              case "Fit":
-                line += " /Fit]";
-                break;
-              case "FitH":
-                line += " /FitH " + anno.options.top + "]";
-                break;
-              case "FitV":
-                anno.options.left = anno.options.left || 0;
-                line += " /FitV " + anno.options.left + "]";
-                break;
-              case "XYZ":
-              default:
-                var top = getVerticalCoordinateString(anno.options.top);
-                anno.options.left = anno.options.left || 0;
-                if (typeof anno.options.zoom === "undefined") {
-                  anno.options.zoom = 0;
-                }
-                line += " /XYZ " + anno.options.left + " " + top + " " + anno.options.zoom + "]";
-                break;
-            }
-          }
-          if (line != "") {
+            line += " >>";
+            objPopup.content = line;
+            this.internal.write(objText.objId, "0 R", objPopup.objId, "0 R");
+            break;
+          case "freetext":
+            rect = "/Rect [" + getHorizontalCoordinateString(anno.bounds.x) + " " + getVerticalCoordinateString(anno.bounds.y) + " " + getHorizontalCoordinateString(anno.bounds.x + anno.bounds.w) + " " + getVerticalCoordinateString(anno.bounds.y + anno.bounds.h) + "] ";
+            var color = anno.color || "#000000";
+            line = "<</Type /Annot /Subtype /FreeText " + rect + "/Contents (" + escape2(encryptor(anno.contents)) + ")";
+            line += " /DS(font: Helvetica,sans-serif 12.0pt; text-align:left; color:#" + color + ")";
+            line += " /Border [0 0 0]";
             line += " >>";
             this.internal.write(line);
-          }
-          break;
+            break;
+          case "link":
+            if (anno.options.name) {
+              var loc = this.annotations._nameMap[anno.options.name];
+              anno.options.pageNumber = loc.page;
+              anno.options.top = loc.y;
+            } else {
+              if (!anno.options.top) {
+                anno.options.top = 0;
+              }
+            }
+            rect = "/Rect [" + anno.finalBounds.x + " " + anno.finalBounds.y + " " + anno.finalBounds.w + " " + anno.finalBounds.h + "] ";
+            line = "";
+            if (anno.options.url) {
+              line = "<</Type /Annot /Subtype /Link " + rect + "/Border [0 0 0] /A <</S /URI /URI (" + escape2(encryptor(anno.options.url)) + ") >>";
+            } else if (anno.options.pageNumber) {
+              var info = this.internal.getPageInfo(anno.options.pageNumber);
+              line = "<</Type /Annot /Subtype /Link " + rect + "/Border [0 0 0] /Dest [" + info.objId + " 0 R";
+              anno.options.magFactor = anno.options.magFactor || "XYZ";
+              switch (anno.options.magFactor) {
+                case "Fit":
+                  line += " /Fit]";
+                  break;
+                case "FitH":
+                  line += " /FitH " + anno.options.top + "]";
+                  break;
+                case "FitV":
+                  anno.options.left = anno.options.left || 0;
+                  line += " /FitV " + anno.options.left + "]";
+                  break;
+                case "XYZ":
+                default:
+                  var top = getVerticalCoordinateString(anno.options.top);
+                  anno.options.left = anno.options.left || 0;
+                  if (typeof anno.options.zoom === "undefined") {
+                    anno.options.zoom = 0;
+                  }
+                  line += " /XYZ " + anno.options.left + " " + top + " " + anno.options.zoom + "]";
+                  break;
+              }
+            }
+            if (line != "") {
+              line += " >>";
+              this.internal.write(line);
+            }
+            break;
+        }
       }
+      this.internal.write("]");
     }
-    this.internal.write("]");
-  }]);
+  ]);
   jsPDFAPI2.createAnnotation = function(options) {
     var pageInfo = this.internal.getCurrentPageInfo();
     switch (options.type) {
       case "link":
-        this.link(options.bounds.x, options.bounds.y, options.bounds.w, options.bounds.h, options);
+        this.link(
+          options.bounds.x,
+          options.bounds.y,
+          options.bounds.w,
+          options.bounds.h,
+          options
+        );
         break;
       case "text":
       case "freetext":
@@ -63924,7 +64441,9 @@ var AcroForm = jsPDF.AcroForm;
     return typeof arabicSubstitionA[letter.charCodeAt(0)] !== "undefined";
   };
   var isArabicLetter = jsPDFAPI2.__arabicParser__.isArabicLetter = function(letter) {
-    return typeof letter === "string" && /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+$/.test(letter);
+    return typeof letter === "string" && /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+$/.test(
+      letter
+    );
   };
   var isArabicEndLetter = jsPDFAPI2.__arabicParser__.isArabicEndLetter = function(letter) {
     return isArabicLetter(letter) && isInArabicSubstitutionA(letter) && arabicSubstitionA[letter.charCodeAt(0)].length <= 2;
@@ -64014,7 +64533,9 @@ var AcroForm = jsPDF.AcroForm;
         if (isArabicLetter(currentLetter)) {
           position3 = getCorrectForm(currentLetter, prevLetter, nextLetter);
           if (position3 !== -1) {
-            newWords[i2] += String.fromCharCode(arabicSubstitionA[currentLetter.charCodeAt(0)][position3]);
+            newWords[i2] += String.fromCharCode(
+              arabicSubstitionA[currentLetter.charCodeAt(0)][position3]
+            );
           } else {
             newWords[i2] += currentLetter;
           }
@@ -64162,10 +64683,13 @@ var AcroForm = jsPDF.AcroForm;
   Canvas.prototype.toDataURL = function() {
     throw new Error("toDataURL is not implemented.");
   };
-  jsPDFAPI2.events.push(["initialized", function() {
-    this.canvas = new Canvas();
-    this.canvas.pdf = this;
-  }]);
+  jsPDFAPI2.events.push([
+    "initialized",
+    function() {
+      this.canvas = new Canvas();
+      this.canvas.pdf = this;
+    }
+  ]);
   return this;
 })(jsPDF.API);
 (function(jsPDFAPI2) {
@@ -64265,10 +64789,26 @@ var AcroForm = jsPDF.AcroForm;
     return this;
   };
   Cell.prototype.clone = function() {
-    return new Cell(this.x, this.y, this.width, this.height, this.text, this.lineNumber, this.align);
+    return new Cell(
+      this.x,
+      this.y,
+      this.width,
+      this.height,
+      this.text,
+      this.lineNumber,
+      this.align
+    );
   };
   Cell.prototype.toArray = function() {
-    return [this.x, this.y, this.width, this.height, this.text, this.lineNumber, this.align];
+    return [
+      this.x,
+      this.y,
+      this.width,
+      this.height,
+      this.text,
+      this.lineNumber,
+      this.align
+    ];
   };
   jsPDFAPI2.setHeaderFunction = function(func) {
     _initialize.call(this);
@@ -64290,7 +64830,9 @@ var AcroForm = jsPDF.AcroForm;
       if (typeof text4 === "number") {
         text4 = String(text4);
       } else {
-        throw new Error("getTextDimensions expects text-parameter to be of type String or type Number or an Array of Strings.");
+        throw new Error(
+          "getTextDimensions expects text-parameter to be of type String or type Number or an Array of Strings."
+        );
       }
     }
     var maxWidth = options.maxWidth;
@@ -64317,7 +64859,10 @@ var AcroForm = jsPDF.AcroForm;
       amountOfLines = text4.length;
     }
     width2 = width2 / scaleFactor2;
-    height2 = Math.max((amountOfLines * fontSize * this.getLineHeightFactor() - fontSize * (this.getLineHeightFactor() - 1)) / scaleFactor2, 0);
+    height2 = Math.max(
+      (amountOfLines * fontSize * this.getLineHeightFactor() - fontSize * (this.getLineHeightFactor() - 1)) / scaleFactor2,
+      0
+    );
     return {
       w: width2,
       h: height2
@@ -64327,7 +64872,12 @@ var AcroForm = jsPDF.AcroForm;
     _initialize.call(this);
     this.addPage();
     var margins = this.internal.__cell__.margins || NO_MARGINS;
-    this.internal.__cell__.lastCell = new Cell(margins.left, margins.top, void 0, void 0);
+    this.internal.__cell__.lastCell = new Cell(
+      margins.left,
+      margins.top,
+      void 0,
+      void 0
+    );
     this.internal.__cell__.pages += 1;
     return this;
   };
@@ -64336,7 +64886,14 @@ var AcroForm = jsPDF.AcroForm;
     if (arguments[0] instanceof Cell) {
       currentCell = arguments[0];
     } else {
-      currentCell = new Cell(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5]);
+      currentCell = new Cell(
+        arguments[0],
+        arguments[1],
+        arguments[2],
+        arguments[3],
+        arguments[4],
+        arguments[5]
+      );
     }
     _initialize.call(this);
     var lastCell = this.internal.__cell__.lastCell;
@@ -64362,24 +64919,45 @@ var AcroForm = jsPDF.AcroForm;
       }
     }
     if (typeof currentCell.text[0] !== "undefined") {
-      this.rect(currentCell.x, currentCell.y, currentCell.width, currentCell.height, printingHeaderRow === true ? "FD" : void 0);
+      this.rect(
+        currentCell.x,
+        currentCell.y,
+        currentCell.width,
+        currentCell.height,
+        printingHeaderRow === true ? "FD" : void 0
+      );
       if (currentCell.align === "right") {
-        this.text(currentCell.text, currentCell.x + currentCell.width - padding, currentCell.y + padding, {
-          align: "right",
-          baseline: "top"
-        });
+        this.text(
+          currentCell.text,
+          currentCell.x + currentCell.width - padding,
+          currentCell.y + padding,
+          {
+            align: "right",
+            baseline: "top"
+          }
+        );
       } else if (currentCell.align === "center") {
-        this.text(currentCell.text, currentCell.x + currentCell.width / 2, currentCell.y + padding, {
-          align: "center",
-          baseline: "top",
-          maxWidth: currentCell.width - padding - padding
-        });
+        this.text(
+          currentCell.text,
+          currentCell.x + currentCell.width / 2,
+          currentCell.y + padding,
+          {
+            align: "center",
+            baseline: "top",
+            maxWidth: currentCell.width - padding - padding
+          }
+        );
       } else {
-        this.text(currentCell.text, currentCell.x + padding, currentCell.y + padding, {
-          align: "left",
-          baseline: "top",
-          maxWidth: currentCell.width - padding - padding
-        });
+        this.text(
+          currentCell.text,
+          currentCell.x + padding,
+          currentCell.y + padding,
+          {
+            align: "left",
+            baseline: "top",
+            maxWidth: currentCell.width - padding - padding
+          }
+        );
       }
     }
     this.internal.__cell__.lastCell = currentCell;
@@ -64391,9 +64969,12 @@ var AcroForm = jsPDF.AcroForm;
       throw new Error("No data for PDF table.");
     }
     config = config || {};
-    var headerNames = [], headerLabels = [], headerAligns = [], i2, columnMatrix = {}, columnWidths = {}, column, columnMinWidths = [], j, tableHeaderConfigs = [], autoSize = config.autoSize || false, printHeaders = config.printHeaders === false ? false : true, fontSize = config.css && typeof config.css["font-size"] !== "undefined" ? config.css["font-size"] * 16 : config.fontSize || 12, margins = config.margins || Object.assign({
-      width: this.getPageWidth()
-    }, NO_MARGINS), padding = typeof config.padding === "number" ? config.padding : 3, headerBackgroundColor = config.headerBackgroundColor || "#c8c8c8", headerTextColor = config.headerTextColor || "#000";
+    var headerNames = [], headerLabels = [], headerAligns = [], i2, columnMatrix = {}, columnWidths = {}, column, columnMinWidths = [], j, tableHeaderConfigs = [], autoSize = config.autoSize || false, printHeaders = config.printHeaders === false ? false : true, fontSize = config.css && typeof config.css["font-size"] !== "undefined" ? config.css["font-size"] * 16 : config.fontSize || 12, margins = config.margins || Object.assign(
+      {
+        width: this.getPageWidth()
+      },
+      NO_MARGINS
+    ), padding = typeof config.padding === "number" ? config.padding : 3, headerBackgroundColor = config.headerBackgroundColor || "#c8c8c8", headerTextColor = config.headerTextColor || "#000";
     _reset.call(this);
     this.internal.__cell__.printHeaders = printHeaders;
     this.internal.__cell__.margins = margins;
@@ -64436,17 +65017,21 @@ var AcroForm = jsPDF.AcroForm;
           return rec[headerName];
         });
         this.setFont(void 0, "bold");
-        columnMinWidths.push(this.getTextDimensions(headerLabels[i2], {
-          fontSize: this.internal.__cell__.table_font_size,
-          scaleFactor: this.internal.scaleFactor
-        }).w);
+        columnMinWidths.push(
+          this.getTextDimensions(headerLabels[i2], {
+            fontSize: this.internal.__cell__.table_font_size,
+            scaleFactor: this.internal.scaleFactor
+          }).w
+        );
         column = columnMatrix[headerName];
         this.setFont(void 0, "normal");
         for (j = 0; j < column.length; j += 1) {
-          columnMinWidths.push(this.getTextDimensions(column[j], {
-            fontSize: this.internal.__cell__.table_font_size,
-            scaleFactor: this.internal.scaleFactor
-          }).w);
+          columnMinWidths.push(
+            this.getTextDimensions(column[j], {
+              fontSize: this.internal.__cell__.table_font_size,
+              scaleFactor: this.internal.scaleFactor
+            }).w
+          );
         }
         columnWidths[headerName] = Math.max.apply(null, columnMinWidths) + padding + padding;
         columnMinWidths = [];
@@ -64461,7 +65046,15 @@ var AcroForm = jsPDF.AcroForm;
       }
       var rowHeight = calculateLineHeight.call(this, row, columnWidths);
       tableHeaderConfigs = headerNames.map(function(value) {
-        return new Cell(x2, y3, columnWidths[value], rowHeight, row[value].text, void 0, row[value].align);
+        return new Cell(
+          x2,
+          y3,
+          columnWidths[value],
+          rowHeight,
+          row[value].text,
+          void 0,
+          row[value].align
+        );
       });
       this.setTableHeaderRow(tableHeaderConfigs);
       this.printHeaderRow(1, false);
@@ -64472,22 +65065,39 @@ var AcroForm = jsPDF.AcroForm;
     }, {});
     for (i2 = 0; i2 < data2.length; i2 += 1) {
       if ("rowStart" in config && config.rowStart instanceof Function) {
-        config.rowStart({
-          row: i2,
-          data: data2[i2]
-        }, this);
+        config.rowStart(
+          {
+            row: i2,
+            data: data2[i2]
+          },
+          this
+        );
       }
       var lineHeight = calculateLineHeight.call(this, data2[i2], columnWidths);
       for (j = 0; j < headerNames.length; j += 1) {
         var cellData = data2[i2][headerNames[j]];
         if ("cellStart" in config && config.cellStart instanceof Function) {
-          config.cellStart({
-            row: i2,
-            col: j,
-            data: cellData
-          }, this);
+          config.cellStart(
+            {
+              row: i2,
+              col: j,
+              data: cellData
+            },
+            this
+          );
         }
-        cell.call(this, new Cell(x2, y3, columnWidths[headerNames[j]], lineHeight, cellData, i2 + 2, align[headerNames[j]]));
+        cell.call(
+          this,
+          new Cell(
+            x2,
+            y3,
+            columnWidths[headerNames[j]],
+            lineHeight,
+            cellData,
+            i2 + 2,
+            align[headerNames[j]]
+          )
+        );
       }
     }
     this.internal.__cell__.table_x = x2;
@@ -64500,7 +65110,10 @@ var AcroForm = jsPDF.AcroForm;
     var scaleFactor2 = this.internal.scaleFactor;
     return Object.keys(model).map(function(key) {
       var value = model[key];
-      return this.splitTextToSize(value.hasOwnProperty("text") ? value.text : value, columnWidths[key] - padding - padding);
+      return this.splitTextToSize(
+        value.hasOwnProperty("text") ? value.text : value,
+        columnWidths[key] - padding - padding
+      );
     }, this).map(function(value) {
       return this.getLineHeightFactor() * value.length * fontSize / scaleFactor2 + padding + padding;
     }, this).reduce(function(pv, cv) {
@@ -64519,8 +65132,18 @@ var AcroForm = jsPDF.AcroForm;
     var tableHeaderCell;
     printingHeaderRow = true;
     if (typeof this.internal.__cell__.headerFunction === "function") {
-      var position3 = this.internal.__cell__.headerFunction(this, this.internal.__cell__.pages);
-      this.internal.__cell__.lastCell = new Cell(position3[0], position3[1], position3[2], position3[3], void 0, -1);
+      var position3 = this.internal.__cell__.headerFunction(
+        this,
+        this.internal.__cell__.pages
+      );
+      this.internal.__cell__.lastCell = new Cell(
+        position3[0],
+        position3[1],
+        position3[2],
+        position3[3],
+        void 0,
+        -1
+      );
     }
     this.setFont(void 0, "bold");
     var tempHeaderConf = [];
@@ -64555,7 +65178,17 @@ var fontStyleOrder = {
   oblique: ["oblique", "italic", "normal"],
   normal: ["normal", "oblique", "italic"]
 };
-var fontStretchOrder = ["ultra-condensed", "extra-condensed", "condensed", "semi-condensed", "normal", "semi-expanded", "expanded", "extra-expanded", "ultra-expanded"];
+var fontStretchOrder = [
+  "ultra-condensed",
+  "extra-condensed",
+  "condensed",
+  "semi-condensed",
+  "normal",
+  "semi-expanded",
+  "expanded",
+  "extra-expanded",
+  "ultra-expanded"
+];
 var fontStretchLookup = toLookup(fontStretchOrder);
 var fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900];
 var fontWeightsLookup = toLookup(fontWeights);
@@ -64640,7 +65273,9 @@ function resolveFontStretch(stretch, matchingSet) {
   var dir = pivot <= fontStretchLookup["normal"] ? -1 : 1;
   var match = searchFromPivot(matchingSet, fontStretchOrder, pivot, dir);
   if (!match) {
-    throw new Error("Could not find a matching font-stretch value for " + stretch);
+    throw new Error(
+      "Could not find a matching font-stretch value for " + stretch
+    );
   }
   return match;
 }
@@ -64697,7 +65332,11 @@ function ruleToString(rule) {
 function resolveFontFace(fontFaceMap, rules, opts) {
   opts = opts || {};
   var defaultFontFamily = opts.defaultFontFamily || "times";
-  var genericFontFamilies = Object.assign({}, defaultGenericFontFamilies, opts.genericFontFamilies || {});
+  var genericFontFamilies = Object.assign(
+    {},
+    defaultGenericFontFamilies,
+    opts.genericFontFamilies || {}
+  );
   var rule = null;
   var matches = null;
   for (var i2 = 0; i2 < rules.length; ++i2) {
@@ -64712,13 +65351,17 @@ function resolveFontFace(fontFaceMap, rules, opts) {
   }
   matches = matches || fontFaceMap[defaultFontFamily];
   if (!matches) {
-    throw new Error("Could not find a font-family for the rule '" + ruleToString(rule) + "' and default family '" + defaultFontFamily + "'.");
+    throw new Error(
+      "Could not find a font-family for the rule '" + ruleToString(rule) + "' and default family '" + defaultFontFamily + "'."
+    );
   }
   matches = resolveFontStretch(rule.stretch, matches);
   matches = resolveFontStyle(rule.style, matches);
   matches = resolveFontWeight(rule.weight, matches);
   if (!matches) {
-    throw new Error("Failed to resolve a font for the rule '" + ruleToString(rule) + "'.");
+    throw new Error(
+      "Failed to resolve a font for the rule '" + ruleToString(rule) + "'."
+    );
   }
   return matches;
 }
@@ -64810,18 +65453,21 @@ function parseFontFamily(input) {
     return this;
   };
   var f23, getHorizontalCoordinateString, getVerticalCoordinateString, getHorizontalCoordinate, getVerticalCoordinate, Point3, Rectangle, Matrix3, _ctx;
-  jsPDFAPI2.events.push(["initialized", function() {
-    this.context2d = new Context2D(this);
-    f23 = this.internal.f2;
-    getHorizontalCoordinateString = this.internal.getCoordinateString;
-    getVerticalCoordinateString = this.internal.getVerticalCoordinateString;
-    getHorizontalCoordinate = this.internal.getHorizontalCoordinate;
-    getVerticalCoordinate = this.internal.getVerticalCoordinate;
-    Point3 = this.internal.Point;
-    Rectangle = this.internal.Rectangle;
-    Matrix3 = this.internal.Matrix;
-    _ctx = new ContextLayer();
-  }]);
+  jsPDFAPI2.events.push([
+    "initialized",
+    function() {
+      this.context2d = new Context2D(this);
+      f23 = this.internal.f2;
+      getHorizontalCoordinateString = this.internal.getCoordinateString;
+      getVerticalCoordinateString = this.internal.getVerticalCoordinateString;
+      getHorizontalCoordinate = this.internal.getHorizontalCoordinate;
+      getVerticalCoordinate = this.internal.getVerticalCoordinate;
+      Point3 = this.internal.Point;
+      Rectangle = this.internal.Rectangle;
+      Matrix3 = this.internal.Matrix;
+      _ctx = new ContextLayer();
+    }
+  ]);
   var Context2D = function Context2D2(pdf) {
     Object.defineProperty(this, "canvas", {
       get: function get() {
@@ -65132,11 +65778,15 @@ function parseFontFamily(input) {
         var rxFontSize = /^([.\d]+)((?:%|in|[cem]m|ex|p[ctx]))$/i;
         var fontSizeUnit = rxFontSize.exec(fontSize)[2];
         if ("px" === fontSizeUnit) {
-          fontSize = Math.floor(parseFloat(fontSize) * this.pdf.internal.scaleFactor);
+          fontSize = Math.floor(
+            parseFloat(fontSize) * this.pdf.internal.scaleFactor
+          );
         } else if ("em" === fontSizeUnit) {
           fontSize = Math.floor(parseFloat(fontSize) * this.pdf.getFontSize());
         } else {
-          fontSize = Math.floor(parseFloat(fontSize) * this.pdf.internal.scaleFactor);
+          fontSize = Math.floor(
+            parseFloat(fontSize) * this.pdf.internal.scaleFactor
+          );
         }
         this.pdf.setFontSize(fontSize);
         var parts = parseFontFamily(fontFamily);
@@ -65275,9 +65925,11 @@ function parseFontFamily(input) {
     pathPreProcess.call(this, "stroke", false);
   };
   Context2D.prototype.beginPath = function() {
-    this.path = [{
-      type: "begin"
-    }];
+    this.path = [
+      {
+        type: "begin"
+      }
+    ];
   };
   Context2D.prototype.moveTo = function(x2, y3) {
     if (isNaN(x2) || isNaN(y3)) {
@@ -65327,8 +65979,13 @@ function parseFontFamily(input) {
   };
   Context2D.prototype.quadraticCurveTo = function(cpx, cpy, x2, y3) {
     if (isNaN(x2) || isNaN(y3) || isNaN(cpx) || isNaN(cpy)) {
-      console2.error("jsPDF.context2d.quadraticCurveTo: Invalid arguments", arguments);
-      throw new Error("Invalid arguments passed to jsPDF.context2d.quadraticCurveTo");
+      console2.error(
+        "jsPDF.context2d.quadraticCurveTo: Invalid arguments",
+        arguments
+      );
+      throw new Error(
+        "Invalid arguments passed to jsPDF.context2d.quadraticCurveTo"
+      );
     }
     var pt0 = this.ctx.transform.applyToPoint(new Point3(x2, y3));
     var pt1 = this.ctx.transform.applyToPoint(new Point3(cpx, cpy));
@@ -65343,8 +66000,13 @@ function parseFontFamily(input) {
   };
   Context2D.prototype.bezierCurveTo = function(cp1x, cp1y, cp2x, cp2y, x2, y3) {
     if (isNaN(x2) || isNaN(y3) || isNaN(cp1x) || isNaN(cp1y) || isNaN(cp2x) || isNaN(cp2y)) {
-      console2.error("jsPDF.context2d.bezierCurveTo: Invalid arguments", arguments);
-      throw new Error("Invalid arguments passed to jsPDF.context2d.bezierCurveTo");
+      console2.error(
+        "jsPDF.context2d.bezierCurveTo: Invalid arguments",
+        arguments
+      );
+      throw new Error(
+        "Invalid arguments passed to jsPDF.context2d.bezierCurveTo"
+      );
     }
     var pt0 = this.ctx.transform.applyToPoint(new Point3(x2, y3));
     var pt1 = this.ctx.transform.applyToPoint(new Point3(cp1x, cp1y));
@@ -65372,7 +66034,9 @@ function parseFontFamily(input) {
       y3 = xpt.y;
       var x_radPt = this.ctx.transform.applyToPoint(new Point3(0, radius));
       var x_radPt0 = this.ctx.transform.applyToPoint(new Point3(0, 0));
-      radius = Math.sqrt(Math.pow(x_radPt.x - x_radPt0.x, 2) + Math.pow(x_radPt.y - x_radPt0.y, 2));
+      radius = Math.sqrt(
+        Math.pow(x_radPt.x - x_radPt0.x, 2) + Math.pow(x_radPt.y - x_radPt0.y, 2)
+      );
     }
     if (Math.abs(endAngle - startAngle) >= 2 * Math.PI) {
       startAngle = 0;
@@ -65650,7 +66314,14 @@ function parseFontFamily(input) {
       console2.error("jsPDF.context2d.rotate: Invalid arguments", arguments);
       throw new Error("Invalid arguments passed to jsPDF.context2d.rotate");
     }
-    var matrix = new Matrix3(Math.cos(angle), Math.sin(angle), -Math.sin(angle), Math.cos(angle), 0, 0);
+    var matrix = new Matrix3(
+      Math.cos(angle),
+      Math.sin(angle),
+      -Math.sin(angle),
+      Math.cos(angle),
+      0,
+      0
+    );
     this.ctx.transform = this.ctx.transform.multiply(matrix);
   };
   Context2D.prototype.translate = function(x2, y3) {
@@ -65713,7 +66384,14 @@ function parseFontFamily(input) {
     matrix = matrix.multiply(decomposedTransformationMatrix.translate);
     matrix = matrix.multiply(decomposedTransformationMatrix.skew);
     matrix = matrix.multiply(decomposedTransformationMatrix.scale);
-    var xRect = matrix.applyToRectangle(new Rectangle(x2 - sx * clipFactorX, y3 - sy * clipFactorY, swidth * factorX, sheight * factorY));
+    var xRect = matrix.applyToRectangle(
+      new Rectangle(
+        x2 - sx * clipFactorX,
+        y3 - sy * clipFactorY,
+        swidth * factorX,
+        sheight * factorY
+      )
+    );
     var pageArray = getPagesByPath.call(this, xRect);
     var pages = [];
     for (var ii2 = 0; ii2 < pageArray.length; ii2 += 1) {
@@ -65736,24 +66414,58 @@ function parseFontFamily(input) {
         if (this.ctx.clip_path.length !== 0) {
           var tmpPaths = this.path;
           clipPath = JSON.parse(JSON.stringify(this.ctx.clip_path));
-          this.path = pathPositionRedo(clipPath, this.posX + this.margin[3], -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset);
+          this.path = pathPositionRedo(
+            clipPath,
+            this.posX + this.margin[3],
+            -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset
+          );
           drawPaths.call(this, "fill", true);
           this.path = tmpPaths;
         }
         var tmpRect = JSON.parse(JSON.stringify(xRect));
-        tmpRect = pathPositionRedo([tmpRect], this.posX + this.margin[3], -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset)[0];
+        tmpRect = pathPositionRedo(
+          [tmpRect],
+          this.posX + this.margin[3],
+          -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset
+        )[0];
         var needsClipping = (i2 > min || i2 < max2) && hasMargins.call(this);
         if (needsClipping) {
           this.pdf.saveGraphicsState();
-          this.pdf.rect(this.margin[3], this.margin[0], pageWidthMinusMargins, pageHeightMinusMargins, null).clip().discardPath();
+          this.pdf.rect(
+            this.margin[3],
+            this.margin[0],
+            pageWidthMinusMargins,
+            pageHeightMinusMargins,
+            null
+          ).clip().discardPath();
         }
-        this.pdf.addImage(img, "JPEG", tmpRect.x, tmpRect.y, tmpRect.w, tmpRect.h, null, null, angle);
+        this.pdf.addImage(
+          img,
+          "JPEG",
+          tmpRect.x,
+          tmpRect.y,
+          tmpRect.w,
+          tmpRect.h,
+          null,
+          null,
+          angle
+        );
         if (needsClipping) {
           this.pdf.restoreGraphicsState();
         }
       }
     } else {
-      this.pdf.addImage(img, "JPEG", xRect.x, xRect.y, xRect.w, xRect.h, null, null, angle);
+      this.pdf.addImage(
+        img,
+        "JPEG",
+        xRect.x,
+        xRect.y,
+        xRect.w,
+        xRect.h,
+        null,
+        null,
+        angle
+      );
     }
   };
   var getPagesByPath = function getPagesByPath2(path2, pageWrapX, pageWrapY) {
@@ -65768,18 +66480,48 @@ function parseFontFamily(input) {
         result.push(Math.floor((path2.y + yOffset) / pageWrapY) + 1);
         break;
       case "arc":
-        result.push(Math.floor((path2.y + yOffset - path2.radius) / pageWrapY) + 1);
-        result.push(Math.floor((path2.y + yOffset + path2.radius) / pageWrapY) + 1);
+        result.push(
+          Math.floor((path2.y + yOffset - path2.radius) / pageWrapY) + 1
+        );
+        result.push(
+          Math.floor((path2.y + yOffset + path2.radius) / pageWrapY) + 1
+        );
         break;
       case "qct":
-        var rectOfQuadraticCurve = getQuadraticCurveBoundary(this.ctx.lastPoint.x, this.ctx.lastPoint.y, path2.x1, path2.y1, path2.x, path2.y);
-        result.push(Math.floor((rectOfQuadraticCurve.y + yOffset) / pageWrapY) + 1);
-        result.push(Math.floor((rectOfQuadraticCurve.y + rectOfQuadraticCurve.h + yOffset) / pageWrapY) + 1);
+        var rectOfQuadraticCurve = getQuadraticCurveBoundary(
+          this.ctx.lastPoint.x,
+          this.ctx.lastPoint.y,
+          path2.x1,
+          path2.y1,
+          path2.x,
+          path2.y
+        );
+        result.push(
+          Math.floor((rectOfQuadraticCurve.y + yOffset) / pageWrapY) + 1
+        );
+        result.push(
+          Math.floor(
+            (rectOfQuadraticCurve.y + rectOfQuadraticCurve.h + yOffset) / pageWrapY
+          ) + 1
+        );
         break;
       case "bct":
-        var rectOfBezierCurve = getBezierCurveBoundary(this.ctx.lastPoint.x, this.ctx.lastPoint.y, path2.x1, path2.y1, path2.x2, path2.y2, path2.x, path2.y);
+        var rectOfBezierCurve = getBezierCurveBoundary(
+          this.ctx.lastPoint.x,
+          this.ctx.lastPoint.y,
+          path2.x1,
+          path2.y1,
+          path2.x2,
+          path2.y2,
+          path2.x,
+          path2.y
+        );
         result.push(Math.floor((rectOfBezierCurve.y + yOffset) / pageWrapY) + 1);
-        result.push(Math.floor((rectOfBezierCurve.y + rectOfBezierCurve.h + yOffset) / pageWrapY) + 1);
+        result.push(
+          Math.floor(
+            (rectOfBezierCurve.y + rectOfBezierCurve.h + yOffset) / pageWrapY
+          ) + 1
+        );
         break;
       case "rect":
         result.push(Math.floor((path2.y + yOffset) / pageWrapY) + 1);
@@ -65877,17 +66619,31 @@ function parseFontFamily(input) {
         if (this.ctx.clip_path.length !== 0) {
           var tmpPaths = this.path;
           clipPath = JSON.parse(JSON.stringify(this.ctx.clip_path));
-          this.path = pathPositionRedo(clipPath, this.posX + this.margin[3], -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset);
+          this.path = pathPositionRedo(
+            clipPath,
+            this.posX + this.margin[3],
+            -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset
+          );
           drawPaths.call(this, rule, true);
           this.path = tmpPaths;
         }
         tmpPath = JSON.parse(JSON.stringify(origPath));
-        this.path = pathPositionRedo(tmpPath, this.posX + this.margin[3], -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset);
+        this.path = pathPositionRedo(
+          tmpPath,
+          this.posX + this.margin[3],
+          -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset
+        );
         if (isClip === false || k === 0) {
           var needsClipping = (k > min || k < max2) && hasMargins.call(this);
           if (needsClipping) {
             this.pdf.saveGraphicsState();
-            this.pdf.rect(this.margin[3], this.margin[0], pageWidthMinusMargins, pageHeightMinusMargins, null).clip().discardPath();
+            this.pdf.rect(
+              this.margin[3],
+              this.margin[0],
+              pageWidthMinusMargins,
+              pageHeightMinusMargins,
+              null
+            ).clip().discardPath();
           }
           drawPaths.call(this, rule, isClip);
           if (needsClipping) {
@@ -65949,7 +66705,14 @@ function parseFontFamily(input) {
           }
           break;
         case "bct":
-          delta = [pt.x1 - xPath[i2 - 1].x, pt.y1 - xPath[i2 - 1].y, pt.x2 - xPath[i2 - 1].x, pt.y2 - xPath[i2 - 1].y, pt.x - xPath[i2 - 1].x, pt.y - xPath[i2 - 1].y];
+          delta = [
+            pt.x1 - xPath[i2 - 1].x,
+            pt.y1 - xPath[i2 - 1].y,
+            pt.x2 - xPath[i2 - 1].x,
+            pt.y2 - xPath[i2 - 1].y,
+            pt.x - xPath[i2 - 1].x,
+            pt.y - xPath[i2 - 1].y
+          ];
           moves[moves.length - 1].deltas.push(delta);
           break;
         case "qct":
@@ -65959,7 +66722,14 @@ function parseFontFamily(input) {
           var y22 = pt.y + 2 / 3 * (pt.y1 - pt.y);
           var x3 = pt.x;
           var y3 = pt.y;
-          delta = [x1 - xPath[i2 - 1].x, y1 - xPath[i2 - 1].y, x2 - xPath[i2 - 1].x, y22 - xPath[i2 - 1].y, x3 - xPath[i2 - 1].x, y3 - xPath[i2 - 1].y];
+          delta = [
+            x1 - xPath[i2 - 1].x,
+            y1 - xPath[i2 - 1].y,
+            x2 - xPath[i2 - 1].x,
+            y22 - xPath[i2 - 1].y,
+            x3 - xPath[i2 - 1].x,
+            y3 - xPath[i2 - 1].y
+          ];
           moves[moves.length - 1].deltas.push(delta);
           break;
         case "arc":
@@ -65991,7 +66761,18 @@ function parseFontFamily(input) {
         for (var ii2 = 0; ii2 < arcs.length; ii2++) {
           var arc = arcs[ii2];
           if (arc.type === "arc") {
-            drawArc.call(this, arc.x, arc.y, arc.radius, arc.startAngle, arc.endAngle, arc.counterclockwise, void 0, isClip, !began);
+            drawArc.call(
+              this,
+              arc.x,
+              arc.y,
+              arc.radius,
+              arc.startAngle,
+              arc.endAngle,
+              arc.counterclockwise,
+              void 0,
+              isClip,
+              !began
+            );
           } else {
             drawLine.call(this, arc.x, arc.y);
           }
@@ -66071,7 +66852,17 @@ function parseFontFamily(input) {
           drawLine.call(this, curve.x1 + x2, curve.y1 + y3);
         }
       }
-      drawCurve.call(this, x2, y3, curve.x2, curve.y2, curve.x3, curve.y3, curve.x4, curve.y4);
+      drawCurve.call(
+        this,
+        x2,
+        y3,
+        curve.x2,
+        curve.y2,
+        curve.x3,
+        curve.y3,
+        curve.x4,
+        curve.y4
+      );
     }
     if (!isClip) {
       putStyle.call(this, style);
@@ -66094,7 +66885,9 @@ function parseFontFamily(input) {
     this.pdf.discardPath();
   };
   var doMove = function doMove2(x2, y3) {
-    this.pdf.internal.out(getHorizontalCoordinateString(x2) + " " + getVerticalCoordinateString(y3) + " m");
+    this.pdf.internal.out(
+      getHorizontalCoordinateString(x2) + " " + getVerticalCoordinateString(y3) + " m"
+    );
   };
   var putText = function putText2(options) {
     var textAlign;
@@ -66122,8 +66915,12 @@ function parseFontFamily(input) {
     matrix = matrix.multiply(decomposedTransformationMatrix.translate);
     matrix = matrix.multiply(decomposedTransformationMatrix.skew);
     matrix = matrix.multiply(decomposedTransformationMatrix.scale);
-    var baselineRect = this.ctx.transform.applyToRectangle(new Rectangle(options.x, yBaseLine, textDimensions.w, textDimensions.h));
-    var textBounds = matrix.applyToRectangle(new Rectangle(options.x, yTop, textDimensions.w, textDimensions.h));
+    var baselineRect = this.ctx.transform.applyToRectangle(
+      new Rectangle(options.x, yBaseLine, textDimensions.w, textDimensions.h)
+    );
+    var textBounds = matrix.applyToRectangle(
+      new Rectangle(options.x, yTop, textDimensions.w, textDimensions.h)
+    );
     var pageArray = getPagesByPath.call(this, textBounds);
     var pages = [];
     for (var ii2 = 0; ii2 < pageArray.length; ii2 += 1) {
@@ -66148,11 +66945,19 @@ function parseFontFamily(input) {
         if (this.ctx.clip_path.length !== 0) {
           var tmpPaths = this.path;
           clipPath = JSON.parse(JSON.stringify(this.ctx.clip_path));
-          this.path = pathPositionRedo(clipPath, this.posX + this.margin[3], -1 * previousPageHeightSum + topMargin);
+          this.path = pathPositionRedo(
+            clipPath,
+            this.posX + this.margin[3],
+            -1 * previousPageHeightSum + topMargin
+          );
           drawPaths.call(this, "fill", true);
           this.path = tmpPaths;
         }
-        var textBoundsOnPage = pathPositionRedo([JSON.parse(JSON.stringify(textBounds))], this.posX + this.margin[3], -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset)[0];
+        var textBoundsOnPage = pathPositionRedo(
+          [JSON.parse(JSON.stringify(textBounds))],
+          this.posX + this.margin[3],
+          -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset
+        )[0];
         if (options.scale >= 0.01) {
           oldSize = this.pdf.internal.getFontSize();
           this.pdf.setFontSize(oldSize * options.scale);
@@ -66162,18 +66967,36 @@ function parseFontFamily(input) {
         var doSlice = this.autoPaging !== "text";
         if (doSlice || textBoundsOnPage.y + textBoundsOnPage.h <= pageHeightMinusBottomMargin) {
           if (doSlice || textBoundsOnPage.y >= topMargin && textBoundsOnPage.x <= pageWidthMinusRightMargin) {
-            var croppedText = doSlice ? options.text : this.pdf.splitTextToSize(options.text, options.maxWidth || pageWidthMinusRightMargin - textBoundsOnPage.x)[0];
-            var baseLineRectOnPage = pathPositionRedo([JSON.parse(JSON.stringify(baselineRect))], this.posX + this.margin[3], -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset)[0];
+            var croppedText = doSlice ? options.text : this.pdf.splitTextToSize(
+              options.text,
+              options.maxWidth || pageWidthMinusRightMargin - textBoundsOnPage.x
+            )[0];
+            var baseLineRectOnPage = pathPositionRedo(
+              [JSON.parse(JSON.stringify(baselineRect))],
+              this.posX + this.margin[3],
+              -previousPageHeightSum + topMargin + this.ctx.prevPageLastElemOffset
+            )[0];
             var needsClipping = doSlice && (i2 > min || i2 < max2) && hasMargins.call(this);
             if (needsClipping) {
               this.pdf.saveGraphicsState();
-              this.pdf.rect(this.margin[3], this.margin[0], pageWidthMinusMargins, pageHeightMinusMargins, null).clip().discardPath();
+              this.pdf.rect(
+                this.margin[3],
+                this.margin[0],
+                pageWidthMinusMargins,
+                pageHeightMinusMargins,
+                null
+              ).clip().discardPath();
             }
-            this.pdf.text(croppedText, baseLineRectOnPage.x, baseLineRectOnPage.y, {
-              angle: options.angle,
-              align: textAlign,
-              renderingMode: options.renderingMode
-            });
+            this.pdf.text(
+              croppedText,
+              baseLineRectOnPage.x,
+              baseLineRectOnPage.y,
+              {
+                angle: options.angle,
+                align: textAlign,
+                renderingMode: options.renderingMode
+              }
+            );
             if (needsClipping) {
               this.pdf.restoreGraphicsState();
             }
@@ -66210,13 +67033,25 @@ function parseFontFamily(input) {
   var drawLine = function drawLine2(x2, y3, prevX, prevY) {
     prevX = prevX || 0;
     prevY = prevY || 0;
-    this.pdf.internal.out(getHorizontalCoordinateString(x2 + prevX) + " " + getVerticalCoordinateString(y3 + prevY) + " l");
+    this.pdf.internal.out(
+      getHorizontalCoordinateString(x2 + prevX) + " " + getVerticalCoordinateString(y3 + prevY) + " l"
+    );
   };
   var drawLines = function drawLines2(lines, x2, y3) {
     return this.pdf.lines(lines, x2, y3, null, null);
   };
   var drawCurve = function drawCurve2(x2, y3, x1, y1, x22, y22, x3, y32) {
-    this.pdf.internal.out([f23(getHorizontalCoordinate(x1 + x2)), f23(getVerticalCoordinate(y1 + y3)), f23(getHorizontalCoordinate(x22 + x2)), f23(getVerticalCoordinate(y22 + y3)), f23(getHorizontalCoordinate(x3 + x2)), f23(getVerticalCoordinate(y32 + y3)), "c"].join(" "));
+    this.pdf.internal.out(
+      [
+        f23(getHorizontalCoordinate(x1 + x2)),
+        f23(getVerticalCoordinate(y1 + y3)),
+        f23(getHorizontalCoordinate(x22 + x2)),
+        f23(getVerticalCoordinate(y22 + y3)),
+        f23(getHorizontalCoordinate(x3 + x2)),
+        f23(getVerticalCoordinate(y32 + y3)),
+        "c"
+      ].join(" ")
+    );
   };
   var createArc = function createArc2(radius, startAngle, endAngle, anticlockwise) {
     var EPSILON = 1e-5;
@@ -66282,7 +67117,12 @@ function parseFontFamily(input) {
     var resultX2 = Math.max(sx, ex, midX1, midX2);
     var resultY1 = Math.min(sy, ey, midY1, midY2);
     var resultY2 = Math.max(sy, ey, midY1, midY2);
-    return new Rectangle(resultX1, resultY1, resultX2 - resultX1, resultY2 - resultY1);
+    return new Rectangle(
+      resultX1,
+      resultY1,
+      resultX2 - resultX1,
+      resultY2 - resultY1
+    );
   };
   var getBezierCurveBoundary = function getBezierCurveBoundary2(ax2, ay2, bx, by, cx2, cy2, dx2, dy2) {
     var tobx = bx - ax2;
@@ -66325,7 +67165,12 @@ function parseFontFamily(input) {
         maxy = Math.max(maxy, y3);
       }
     }
-    return new Rectangle(Math.round(minx), Math.round(miny), Math.round(maxx - minx), Math.round(maxy - miny));
+    return new Rectangle(
+      Math.round(minx),
+      Math.round(miny),
+      Math.round(maxx - minx),
+      Math.round(maxy - miny)
+    );
   };
   var getPrevLineDashValue = function getPrevLineDashValue2(lineDash, lineDashOffset) {
     return JSON.stringify({
@@ -66337,7 +67182,10 @@ function parseFontFamily(input) {
     if (!this.prevLineDash && !this.ctx.lineDash.length && !this.ctx.lineDashOffset) {
       return;
     }
-    var nextLineDash = getPrevLineDashValue(this.ctx.lineDash, this.ctx.lineDashOffset);
+    var nextLineDash = getPrevLineDashValue(
+      this.ctx.lineDash,
+      this.ctx.lineDashOffset
+    );
     if (this.prevLineDash !== nextLineDash) {
       this.pdf.setLineDash(this.ctx.lineDash, this.ctx.lineDashOffset);
       this.prevLineDash = nextLineDash;
@@ -66348,6 +67196,7 @@ function parseFontFamily(input) {
   var ASCII85Encode = function ASCII85Encode2(a2) {
     var b, c3, d, e2, f3, g, h2, i2, j, k;
     for (!/[^\x00-\xFF]/.test(a2), b = "\0\0\0\0".slice(a2.length % 4 || 4), a2 += b, c3 = [], d = 0, e2 = a2.length; e2 > d; d += 4) {
+      ;
       f3 = (a2.charCodeAt(d) << 24) + (a2.charCodeAt(d + 1) << 16) + (a2.charCodeAt(d + 2) << 8) + a2.charCodeAt(d + 3), 0 !== f3 ? (k = f3 % 85, f3 = (f3 - k) / 85, j = f3 % 85, f3 = (f3 - j) / 85, i2 = f3 % 85, f3 = (f3 - i2) / 85, h2 = f3 % 85, f3 = (f3 - h2) / 85, g = f3 % 85, c3.push(g + 33, h2 + 33, i2 + 33, j + 33, k + 33)) : c3.push(122);
     }
     return function(a3, b2) {
@@ -66359,6 +67208,7 @@ function parseFontFamily(input) {
   var ASCII85Decode = function ASCII85Decode2(a2) {
     var c3, d, e2, f3, g, h2 = String, l2 = "length", w = 255, x2 = "charCodeAt", y3 = "slice", z = "replace";
     for ("~>" === a2[y3](-2), a2 = a2[y3](0, -2)[z](/\s/g, "")[z]("z", "!!!!!"), c3 = "uuuuu"[y3](a2[l2] % 5 || 5), a2 += c3, e2 = [], f3 = 0, g = a2[l2]; g > f3; f3 += 5) {
+      ;
       d = 52200625 * (a2[x2](f3) - 33) + 614125 * (a2[x2](f3 + 1) - 33) + 7225 * (a2[x2](f3 + 2) - 33) + 85 * (a2[x2](f3 + 3) - 33) + (a2[x2](f3 + 4) - 33), e2.push(w & d >> 24, w & d >> 16, w & d >> 8, w & d);
     }
     return function(a3, b) {
@@ -66438,7 +67288,9 @@ function parseFontFamily(input) {
           reverseChain.push("/FlateDecode");
           break;
         default:
-          throw new Error('The filter: "' + filterChain[i2] + '" is not implemented');
+          throw new Error(
+            'The filter: "' + filterChain[i2] + '" is not implemented'
+          );
       }
     }
     return {
@@ -66563,15 +67415,22 @@ function parseFontFamily(input) {
       } else if (node3.nodeName === "TEXTAREA" || node3.nodeName === "SELECT") {
         clone.value = node3.value;
       }
-      clone.addEventListener("load", function() {
-        clone.scrollTop = node3.scrollTop;
-        clone.scrollLeft = node3.scrollLeft;
-      }, true);
+      clone.addEventListener(
+        "load",
+        function() {
+          clone.scrollTop = node3.scrollTop;
+          clone.scrollLeft = node3.scrollLeft;
+        },
+        true
+      );
     }
     return clone;
   };
   var Worker2 = function Worker3(opt) {
-    var root2 = Object.assign(Worker3.convert(Promise.resolve()), JSON.parse(JSON.stringify(Worker3.template)));
+    var root2 = Object.assign(
+      Worker3.convert(Promise.resolve()),
+      JSON.parse(JSON.stringify(Worker3.template))
+    );
     var self2 = Worker3.convert(Promise.resolve(), root2);
     self2 = self2.setProgress(1, Worker3, 1, [Worker3]);
     self2 = self2.set(opt);
@@ -66667,11 +67526,14 @@ function parseFontFamily(input) {
     }
   };
   Worker2.prototype.toContainer = function toContainer() {
-    var prereqs = [function checkSrc() {
-      return this.prop.src || this.error("Cannot duplicate - no source HTML.");
-    }, function checkPageSize() {
-      return this.prop.pageSize || this.setPageSize();
-    }];
+    var prereqs = [
+      function checkSrc() {
+        return this.prop.src || this.error("Cannot duplicate - no source HTML.");
+      },
+      function checkPageSize() {
+        return this.prop.pageSize || this.setPageSize();
+      }
+    ];
     return this.thenList(prereqs).then(function toContainer_main() {
       var overlayCSS = {
         position: "fixed",
@@ -66685,16 +67547,29 @@ function parseFontFamily(input) {
       var containerCSS = {
         position: "relative",
         display: "inline-block",
-        width: (typeof this.opt.width === "number" && !isNaN(this.opt.width) && typeof this.opt.windowWidth === "number" && !isNaN(this.opt.windowWidth) ? this.opt.windowWidth : Math.max(this.prop.src.clientWidth, this.prop.src.scrollWidth, this.prop.src.offsetWidth)) + "px",
+        width: (typeof this.opt.width === "number" && !isNaN(this.opt.width) && typeof this.opt.windowWidth === "number" && !isNaN(this.opt.windowWidth) ? this.opt.windowWidth : Math.max(
+          this.prop.src.clientWidth,
+          this.prop.src.scrollWidth,
+          this.prop.src.offsetWidth
+        )) + "px",
         left: 0,
         right: 0,
         top: 0,
         margin: "auto",
         backgroundColor: this.opt.backgroundColor
       };
-      var source = cloneNode(this.prop.src, this.opt.html2canvas.javascriptEnabled);
+      var source = cloneNode(
+        this.prop.src,
+        this.opt.html2canvas.javascriptEnabled
+      );
       if (source.tagName === "BODY") {
-        containerCSS.height = Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight) + "px";
+        containerCSS.height = Math.max(
+          document.body.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.clientHeight,
+          document.documentElement.scrollHeight,
+          document.documentElement.offsetHeight
+        ) + "px";
       }
       this.prop.overlay = createElement("div", {
         className: "html2pdf__overlay",
@@ -66705,26 +67580,34 @@ function parseFontFamily(input) {
         style: containerCSS
       });
       this.prop.container.appendChild(source);
-      this.prop.container.firstChild.appendChild(createElement("div", {
-        style: {
-          clear: "both",
-          border: "0 none transparent",
-          margin: 0,
-          padding: 0,
-          height: 0
-        }
-      }));
+      this.prop.container.firstChild.appendChild(
+        createElement("div", {
+          style: {
+            clear: "both",
+            border: "0 none transparent",
+            margin: 0,
+            padding: 0,
+            height: 0
+          }
+        })
+      );
       this.prop.container.style.float = "none";
       this.prop.overlay.appendChild(this.prop.container);
       document.body.appendChild(this.prop.overlay);
       this.prop.container.firstChild.style.position = "relative";
-      this.prop.container.height = Math.max(this.prop.container.firstChild.clientHeight, this.prop.container.firstChild.scrollHeight, this.prop.container.firstChild.offsetHeight) + "px";
+      this.prop.container.height = Math.max(
+        this.prop.container.firstChild.clientHeight,
+        this.prop.container.firstChild.scrollHeight,
+        this.prop.container.firstChild.offsetHeight
+      ) + "px";
     });
   };
   Worker2.prototype.toCanvas = function toCanvas() {
-    var prereqs = [function checkContainer() {
-      return document.body.contains(this.prop.container) || this.toContainer();
-    }];
+    var prereqs = [
+      function checkContainer() {
+        return document.body.contains(this.prop.container) || this.toContainer();
+      }
+    ];
     return this.thenList(prereqs).then(loadHtml2Canvas).then(function toCanvas_main(html2canvas) {
       var options = Object.assign({}, this.opt.html2canvas);
       delete options.onrendered;
@@ -66738,27 +67621,32 @@ function parseFontFamily(input) {
     });
   };
   Worker2.prototype.toContext2d = function toContext2d() {
-    var prereqs = [function checkContainer() {
-      return document.body.contains(this.prop.container) || this.toContainer();
-    }];
+    var prereqs = [
+      function checkContainer() {
+        return document.body.contains(this.prop.container) || this.toContainer();
+      }
+    ];
     return this.thenList(prereqs).then(loadHtml2Canvas).then(function toContext2d_main(html2canvas) {
       var pdf = this.opt.jsPDF;
       var fontFaces = this.opt.fontFaces;
       var scale3 = typeof this.opt.width === "number" && !isNaN(this.opt.width) && typeof this.opt.windowWidth === "number" && !isNaN(this.opt.windowWidth) ? this.opt.width / this.opt.windowWidth : 1;
-      var options = Object.assign({
-        async: true,
-        allowTaint: true,
-        scale: scale3,
-        scrollX: this.opt.scrollX || 0,
-        scrollY: this.opt.scrollY || 0,
-        backgroundColor: "#ffffff",
-        imageTimeout: 15e3,
-        logging: true,
-        proxy: null,
-        removeContainer: true,
-        foreignObjectRendering: false,
-        useCORS: false
-      }, this.opt.html2canvas);
+      var options = Object.assign(
+        {
+          async: true,
+          allowTaint: true,
+          scale: scale3,
+          scrollX: this.opt.scrollX || 0,
+          scrollY: this.opt.scrollY || 0,
+          backgroundColor: "#ffffff",
+          imageTimeout: 15e3,
+          logging: true,
+          proxy: null,
+          removeContainer: true,
+          foreignObjectRendering: false,
+          useCORS: false
+        },
+        this.opt.html2canvas
+      );
       delete options.onrendered;
       pdf.context2d.autoPaging = typeof this.opt.autoPaging === "undefined" ? true : this.opt.autoPaging;
       pdf.context2d.posX = this.opt.x;
@@ -66777,7 +67665,11 @@ function parseFontFamily(input) {
         }
       }
       options.windowHeight = options.windowHeight || 0;
-      options.windowHeight = options.windowHeight == 0 ? Math.max(this.prop.container.clientHeight, this.prop.container.scrollHeight, this.prop.container.offsetHeight) : options.windowHeight;
+      options.windowHeight = options.windowHeight == 0 ? Math.max(
+        this.prop.container.clientHeight,
+        this.prop.container.scrollHeight,
+        this.prop.container.offsetHeight
+      ) : options.windowHeight;
       pdf.context2d.save(true);
       return html2canvas(this.prop.container, options);
     }).then(function toContext2d_post(canvas) {
@@ -66790,11 +67682,16 @@ function parseFontFamily(input) {
     });
   };
   Worker2.prototype.toImg = function toImg() {
-    var prereqs = [function checkCanvas() {
-      return this.prop.canvas || this.toCanvas();
-    }];
+    var prereqs = [
+      function checkCanvas() {
+        return this.prop.canvas || this.toCanvas();
+      }
+    ];
     return this.thenList(prereqs).then(function toImg_main() {
-      var imgData = this.prop.canvas.toDataURL("image/" + this.opt.image.type, this.opt.image.quality);
+      var imgData = this.prop.canvas.toDataURL(
+        "image/" + this.opt.image.type,
+        this.opt.image.quality
+      );
       this.prop.img = document.createElement("img");
       this.prop.img.src = imgData;
     });
@@ -66819,17 +67716,21 @@ function parseFontFamily(input) {
     }
   };
   Worker2.prototype.outputPdf = function outputPdf(type, options) {
-    var prereqs = [function checkPdf() {
-      return this.prop.pdf || this.toPdf();
-    }];
+    var prereqs = [
+      function checkPdf() {
+        return this.prop.pdf || this.toPdf();
+      }
+    ];
     return this.thenList(prereqs).then(function outputPdf_main() {
       return this.prop.pdf.output(type, options);
     });
   };
   Worker2.prototype.outputImg = function outputImg(type) {
-    var prereqs = [function checkImg() {
-      return this.prop.img || this.toImg();
-    }];
+    var prereqs = [
+      function checkImg() {
+        return this.prop.img || this.toImg();
+      }
+    ];
     return this.thenList(prereqs).then(function outputImg_main() {
       switch (type) {
         case void 0:
@@ -66847,19 +67748,25 @@ function parseFontFamily(input) {
     });
   };
   Worker2.prototype.save = function save(filename) {
-    var prereqs = [function checkPdf() {
-      return this.prop.pdf || this.toPdf();
-    }];
-    return this.thenList(prereqs).set(filename ? {
-      filename
-    } : null).then(function save_main() {
+    var prereqs = [
+      function checkPdf() {
+        return this.prop.pdf || this.toPdf();
+      }
+    ];
+    return this.thenList(prereqs).set(
+      filename ? {
+        filename
+      } : null
+    ).then(function save_main() {
       this.prop.pdf.save(this.opt.filename);
     });
   };
   Worker2.prototype.doCallback = function doCallback() {
-    var prereqs = [function checkPdf() {
-      return this.prop.pdf || this.toPdf();
-    }];
+    var prereqs = [
+      function checkPdf() {
+        return this.prop.pdf || this.toPdf();
+      }
+    ];
     return this.thenList(prereqs).then(function doCallback_main() {
       this.prop.callback(this.prop.pdf);
     });
@@ -66952,20 +67859,29 @@ function parseFontFamily(input) {
     return this;
   };
   Worker2.prototype.updateProgress = function updateProgress(val, state, n2, stack) {
-    return this.setProgress(val ? this.progress.val + val : null, state ? state : null, n2 ? this.progress.n + n2 : null, stack ? this.progress.stack.concat(stack) : null);
+    return this.setProgress(
+      val ? this.progress.val + val : null,
+      state ? state : null,
+      n2 ? this.progress.n + n2 : null,
+      stack ? this.progress.stack.concat(stack) : null
+    );
   };
   Worker2.prototype.then = function then(onFulfilled, onRejected) {
     var self2 = this;
-    return this.thenCore(onFulfilled, onRejected, function then_main(onFulfilled2, onRejected2) {
-      self2.updateProgress(null, null, 1, [onFulfilled2]);
-      return Promise.prototype.then.call(this, function then_pre(val) {
-        self2.updateProgress(null, onFulfilled2);
-        return val;
-      }).then(onFulfilled2, onRejected2).then(function then_post(val) {
-        self2.updateProgress(1);
-        return val;
-      });
-    });
+    return this.thenCore(
+      onFulfilled,
+      onRejected,
+      function then_main(onFulfilled2, onRejected2) {
+        self2.updateProgress(null, null, 1, [onFulfilled2]);
+        return Promise.prototype.then.call(this, function then_pre(val) {
+          self2.updateProgress(null, onFulfilled2);
+          return val;
+        }).then(onFulfilled2, onRejected2).then(function then_post(val) {
+          self2.updateProgress(1);
+          return val;
+        });
+      }
+    );
   };
   Worker2.prototype.thenCore = function thenCore(onFulfilled, onRejected, thenBase) {
     thenBase = thenBase || Promise.prototype.then;
@@ -67176,155 +68092,180 @@ function parseFontFamily(input) {
 })(jsPDF.API);
 (function(jsPDFAPI2) {
   var namesOid;
-  jsPDFAPI2.events.push(["postPutResources", function() {
-    var pdf = this;
-    var rx2 = /^(\d+) 0 obj$/;
-    if (this.outline.root.children.length > 0) {
-      var lines = pdf.outline.render().split(/\r\n/);
-      for (var i2 = 0; i2 < lines.length; i2++) {
-        var line = lines[i2];
-        var m3 = rx2.exec(line);
-        if (m3 != null) {
-          var oid = m3[1];
-          pdf.internal.newObjectDeferredBegin(oid, false);
-        }
-        pdf.internal.write(line);
-      }
-    }
-    if (this.outline.createNamedDestinations) {
-      var totalPages = this.internal.pages.length;
-      var dests = [];
-      for (var i2 = 0; i2 < totalPages; i2++) {
-        var id = pdf.internal.newObject();
-        dests.push(id);
-        var info = pdf.internal.getPageInfo(i2 + 1);
-        pdf.internal.write("<< /D[" + info.objId + " 0 R /XYZ null null null]>> endobj");
-      }
-      var names2Oid = pdf.internal.newObject();
-      pdf.internal.write("<< /Names [ ");
-      for (var i2 = 0; i2 < dests.length; i2++) {
-        pdf.internal.write("(page_" + (i2 + 1) + ")" + dests[i2] + " 0 R");
-      }
-      pdf.internal.write(" ] >>", "endobj");
-      namesOid = pdf.internal.newObject();
-      pdf.internal.write("<< /Dests " + names2Oid + " 0 R");
-      pdf.internal.write(">>", "endobj");
-    }
-  }]);
-  jsPDFAPI2.events.push(["putCatalog", function() {
-    var pdf = this;
-    if (pdf.outline.root.children.length > 0) {
-      pdf.internal.write("/Outlines", this.outline.makeRef(this.outline.root));
-      if (this.outline.createNamedDestinations) {
-        pdf.internal.write("/Names " + namesOid + " 0 R");
-      }
-    }
-  }]);
-  jsPDFAPI2.events.push(["initialized", function() {
-    var pdf = this;
-    pdf.outline = {
-      createNamedDestinations: false,
-      root: {
-        children: []
-      }
-    };
-    pdf.outline.add = function(parent, title, options) {
-      var item = {
-        title,
-        options,
-        children: []
-      };
-      if (parent == null) {
-        parent = this.root;
-      }
-      parent.children.push(item);
-      return item;
-    };
-    pdf.outline.render = function() {
-      this.ctx = {};
-      this.ctx.val = "";
-      this.ctx.pdf = pdf;
-      this.genIds_r(this.root);
-      this.renderRoot(this.root);
-      this.renderItems(this.root);
-      return this.ctx.val;
-    };
-    pdf.outline.genIds_r = function(node3) {
-      node3.id = pdf.internal.newObjectDeferred();
-      for (var i2 = 0; i2 < node3.children.length; i2++) {
-        this.genIds_r(node3.children[i2]);
-      }
-    };
-    pdf.outline.renderRoot = function(node3) {
-      this.objStart(node3);
-      this.line("/Type /Outlines");
-      if (node3.children.length > 0) {
-        this.line("/First " + this.makeRef(node3.children[0]));
-        this.line("/Last " + this.makeRef(node3.children[node3.children.length - 1]));
-      }
-      this.line("/Count " + this.count_r({
-        count: 0
-      }, node3));
-      this.objEnd();
-    };
-    pdf.outline.renderItems = function(node3) {
-      var getVerticalCoordinateString = this.ctx.pdf.internal.getVerticalCoordinateString;
-      for (var i2 = 0; i2 < node3.children.length; i2++) {
-        var item = node3.children[i2];
-        this.objStart(item);
-        this.line("/Title " + this.makeString(item.title));
-        this.line("/Parent " + this.makeRef(node3));
-        if (i2 > 0) {
-          this.line("/Prev " + this.makeRef(node3.children[i2 - 1]));
-        }
-        if (i2 < node3.children.length - 1) {
-          this.line("/Next " + this.makeRef(node3.children[i2 + 1]));
-        }
-        if (item.children.length > 0) {
-          this.line("/First " + this.makeRef(item.children[0]));
-          this.line("/Last " + this.makeRef(item.children[item.children.length - 1]));
-        }
-        var count = this.count = this.count_r({
-          count: 0
-        }, item);
-        if (count > 0) {
-          this.line("/Count " + count);
-        }
-        if (item.options) {
-          if (item.options.pageNumber) {
-            var info = pdf.internal.getPageInfo(item.options.pageNumber);
-            this.line("/Dest [" + info.objId + " 0 R /XYZ 0 " + getVerticalCoordinateString(0) + " 0]");
+  jsPDFAPI2.events.push([
+    "postPutResources",
+    function() {
+      var pdf = this;
+      var rx2 = /^(\d+) 0 obj$/;
+      if (this.outline.root.children.length > 0) {
+        var lines = pdf.outline.render().split(/\r\n/);
+        for (var i2 = 0; i2 < lines.length; i2++) {
+          var line = lines[i2];
+          var m3 = rx2.exec(line);
+          if (m3 != null) {
+            var oid = m3[1];
+            pdf.internal.newObjectDeferredBegin(oid, false);
           }
+          pdf.internal.write(line);
         }
+      }
+      if (this.outline.createNamedDestinations) {
+        var totalPages = this.internal.pages.length;
+        var dests = [];
+        for (var i2 = 0; i2 < totalPages; i2++) {
+          var id = pdf.internal.newObject();
+          dests.push(id);
+          var info = pdf.internal.getPageInfo(i2 + 1);
+          pdf.internal.write(
+            "<< /D[" + info.objId + " 0 R /XYZ null null null]>> endobj"
+          );
+        }
+        var names2Oid = pdf.internal.newObject();
+        pdf.internal.write("<< /Names [ ");
+        for (var i2 = 0; i2 < dests.length; i2++) {
+          pdf.internal.write("(page_" + (i2 + 1) + ")" + dests[i2] + " 0 R");
+        }
+        pdf.internal.write(" ] >>", "endobj");
+        namesOid = pdf.internal.newObject();
+        pdf.internal.write("<< /Dests " + names2Oid + " 0 R");
+        pdf.internal.write(">>", "endobj");
+      }
+    }
+  ]);
+  jsPDFAPI2.events.push([
+    "putCatalog",
+    function() {
+      var pdf = this;
+      if (pdf.outline.root.children.length > 0) {
+        pdf.internal.write("/Outlines", this.outline.makeRef(this.outline.root));
+        if (this.outline.createNamedDestinations) {
+          pdf.internal.write("/Names " + namesOid + " 0 R");
+        }
+      }
+    }
+  ]);
+  jsPDFAPI2.events.push([
+    "initialized",
+    function() {
+      var pdf = this;
+      pdf.outline = {
+        createNamedDestinations: false,
+        root: {
+          children: []
+        }
+      };
+      pdf.outline.add = function(parent, title, options) {
+        var item = {
+          title,
+          options,
+          children: []
+        };
+        if (parent == null) {
+          parent = this.root;
+        }
+        parent.children.push(item);
+        return item;
+      };
+      pdf.outline.render = function() {
+        this.ctx = {};
+        this.ctx.val = "";
+        this.ctx.pdf = pdf;
+        this.genIds_r(this.root);
+        this.renderRoot(this.root);
+        this.renderItems(this.root);
+        return this.ctx.val;
+      };
+      pdf.outline.genIds_r = function(node3) {
+        node3.id = pdf.internal.newObjectDeferred();
+        for (var i2 = 0; i2 < node3.children.length; i2++) {
+          this.genIds_r(node3.children[i2]);
+        }
+      };
+      pdf.outline.renderRoot = function(node3) {
+        this.objStart(node3);
+        this.line("/Type /Outlines");
+        if (node3.children.length > 0) {
+          this.line("/First " + this.makeRef(node3.children[0]));
+          this.line(
+            "/Last " + this.makeRef(node3.children[node3.children.length - 1])
+          );
+        }
+        this.line(
+          "/Count " + this.count_r(
+            {
+              count: 0
+            },
+            node3
+          )
+        );
         this.objEnd();
-      }
-      for (var z = 0; z < node3.children.length; z++) {
-        this.renderItems(node3.children[z]);
-      }
-    };
-    pdf.outline.line = function(text4) {
-      this.ctx.val += text4 + "\r\n";
-    };
-    pdf.outline.makeRef = function(node3) {
-      return node3.id + " 0 R";
-    };
-    pdf.outline.makeString = function(val) {
-      return "(" + pdf.internal.pdfEscape(val) + ")";
-    };
-    pdf.outline.objStart = function(node3) {
-      this.ctx.val += "\r\n" + node3.id + " 0 obj\r\n<<\r\n";
-    };
-    pdf.outline.objEnd = function() {
-      this.ctx.val += ">> \r\nendobj\r\n";
-    };
-    pdf.outline.count_r = function(ctx, node3) {
-      for (var i2 = 0; i2 < node3.children.length; i2++) {
-        ctx.count++;
-        this.count_r(ctx, node3.children[i2]);
-      }
-      return ctx.count;
-    };
-  }]);
+      };
+      pdf.outline.renderItems = function(node3) {
+        var getVerticalCoordinateString = this.ctx.pdf.internal.getVerticalCoordinateString;
+        for (var i2 = 0; i2 < node3.children.length; i2++) {
+          var item = node3.children[i2];
+          this.objStart(item);
+          this.line("/Title " + this.makeString(item.title));
+          this.line("/Parent " + this.makeRef(node3));
+          if (i2 > 0) {
+            this.line("/Prev " + this.makeRef(node3.children[i2 - 1]));
+          }
+          if (i2 < node3.children.length - 1) {
+            this.line("/Next " + this.makeRef(node3.children[i2 + 1]));
+          }
+          if (item.children.length > 0) {
+            this.line("/First " + this.makeRef(item.children[0]));
+            this.line(
+              "/Last " + this.makeRef(item.children[item.children.length - 1])
+            );
+          }
+          var count = this.count = this.count_r(
+            {
+              count: 0
+            },
+            item
+          );
+          if (count > 0) {
+            this.line("/Count " + count);
+          }
+          if (item.options) {
+            if (item.options.pageNumber) {
+              var info = pdf.internal.getPageInfo(item.options.pageNumber);
+              this.line(
+                "/Dest [" + info.objId + " 0 R /XYZ 0 " + getVerticalCoordinateString(0) + " 0]"
+              );
+            }
+          }
+          this.objEnd();
+        }
+        for (var z = 0; z < node3.children.length; z++) {
+          this.renderItems(node3.children[z]);
+        }
+      };
+      pdf.outline.line = function(text4) {
+        this.ctx.val += text4 + "\r\n";
+      };
+      pdf.outline.makeRef = function(node3) {
+        return node3.id + " 0 R";
+      };
+      pdf.outline.makeString = function(val) {
+        return "(" + pdf.internal.pdfEscape(val) + ")";
+      };
+      pdf.outline.objStart = function(node3) {
+        this.ctx.val += "\r\n" + node3.id + " 0 obj\r\n<<\r\n";
+      };
+      pdf.outline.objEnd = function() {
+        this.ctx.val += ">> \r\nendobj\r\n";
+      };
+      pdf.outline.count_r = function(ctx, node3) {
+        for (var i2 = 0; i2 < node3.children.length; i2++) {
+          ctx.count++;
+          this.count_r(ctx, node3.children[i2]);
+        }
+        return ctx.count;
+      };
+    }
+  ]);
   return this;
 })(jsPDF.API);
 (function(jsPDFAPI2) {
@@ -67488,7 +68429,10 @@ var PNG = function() {
           text4 = this.read(chunkSize);
           index3 = text4.indexOf(0);
           key = String.fromCharCode.apply(String, text4.slice(0, index3));
-          this.text[key] = String.fromCharCode.apply(String, text4.slice(index3 + 1));
+          this.text[key] = String.fromCharCode.apply(
+            String,
+            text4.slice(index3 + 1)
+          );
           break;
         case "IEND":
           if (frame) {
@@ -67789,7 +68733,9 @@ var PNG = function() {
   };
   PNG2.prototype.stopAnimation = function() {
     var _ref;
-    return clearTimeout((_ref = this.animation) != null ? _ref._timeout : void 0);
+    return clearTimeout(
+      (_ref = this.animation) != null ? _ref._timeout : void 0
+    );
   };
   PNG2.prototype.render = function(canvas) {
     var ctx, data2;
@@ -67835,7 +68781,12 @@ var PNG = function() {
         filter_method = filterPaeth;
         break;
     }
-    bytes = applyPngFilterMethod(bytes, lineLength, colorsPerPixel, filter_method);
+    bytes = applyPngFilterMethod(
+      bytes,
+      lineLength,
+      colorsPerPixel,
+      filter_method
+    );
     var dat = zlibSync(bytes, {
       level
     });
@@ -67974,7 +68925,9 @@ var PNG = function() {
         if (image.bits === 16) {
           pixels = new Uint32Array(image.decodePixels().buffer);
           len = pixels.length;
-          imgData = new Uint8Array(len * (32 / image.pixelBitlength) * image.colors);
+          imgData = new Uint8Array(
+            len * (32 / image.pixelBitlength) * image.colors
+          );
           alphaData = new Uint8Array(len * (32 / image.pixelBitlength));
           hasColors = image.colors > 1;
           i2 = 0;
@@ -67993,7 +68946,12 @@ var PNG = function() {
           bitsPerComponent = 8;
         }
         if (canCompress(compression)) {
-          imageData = compressBytes(imgData, image.width * image.colors, image.colors, compression);
+          imageData = compressBytes(
+            imgData,
+            image.width * image.colors,
+            image.colors,
+            compression
+          );
           smask = compressBytes(alphaData, image.width, 1, compression);
         } else {
           imageData = imgData;
@@ -68130,7 +69088,9 @@ function GifReader(buf) {
             }
             break;
           default:
-            throw new Error("Unknown graphic control label: 0x" + buf[p2 - 1].toString(16));
+            throw new Error(
+              "Unknown graphic control label: 0x" + buf[p2 - 1].toString(16)
+            );
         }
         break;
       case 44:
@@ -68200,7 +69160,12 @@ function GifReader(buf) {
     var frame = this.frameInfo(frame_num);
     var num_pixels = frame.width * frame.height;
     var index_stream = new Uint8Array(num_pixels);
-    GifReaderLZWOutputIndexStream(buf, frame.data_offset, index_stream, num_pixels);
+    GifReaderLZWOutputIndexStream(
+      buf,
+      frame.data_offset,
+      index_stream,
+      num_pixels
+    );
     var palette_offset2 = frame.palette_offset;
     var trans = frame.transparent_index;
     if (trans === null)
@@ -68245,7 +69210,12 @@ function GifReader(buf) {
     var frame = this.frameInfo(frame_num);
     var num_pixels = frame.width * frame.height;
     var index_stream = new Uint8Array(num_pixels);
-    GifReaderLZWOutputIndexStream(buf, frame.data_offset, index_stream, num_pixels);
+    GifReaderLZWOutputIndexStream(
+      buf,
+      frame.data_offset,
+      index_stream,
+      num_pixels
+    );
     var palette_offset2 = frame.palette_offset;
     var trans = frame.transparent_index;
     if (trans === null)
@@ -68387,29 +69357,631 @@ function JPEGEncoder(quality) {
   var clt = new Array(256);
   var RGB_YUV_TABLE = new Array(2048);
   var currentQuality;
-  var ZigZag = [0, 1, 5, 6, 14, 15, 27, 28, 2, 4, 7, 13, 16, 26, 29, 42, 3, 8, 12, 17, 25, 30, 41, 43, 9, 11, 18, 24, 31, 40, 44, 53, 10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60, 21, 34, 37, 47, 50, 56, 59, 61, 35, 36, 48, 49, 57, 58, 62, 63];
-  var std_dc_luminance_nrcodes = [0, 0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0];
+  var ZigZag = [
+    0,
+    1,
+    5,
+    6,
+    14,
+    15,
+    27,
+    28,
+    2,
+    4,
+    7,
+    13,
+    16,
+    26,
+    29,
+    42,
+    3,
+    8,
+    12,
+    17,
+    25,
+    30,
+    41,
+    43,
+    9,
+    11,
+    18,
+    24,
+    31,
+    40,
+    44,
+    53,
+    10,
+    19,
+    23,
+    32,
+    39,
+    45,
+    52,
+    54,
+    20,
+    22,
+    33,
+    38,
+    46,
+    51,
+    55,
+    60,
+    21,
+    34,
+    37,
+    47,
+    50,
+    56,
+    59,
+    61,
+    35,
+    36,
+    48,
+    49,
+    57,
+    58,
+    62,
+    63
+  ];
+  var std_dc_luminance_nrcodes = [
+    0,
+    0,
+    1,
+    5,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ];
   var std_dc_luminance_values = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-  var std_ac_luminance_nrcodes = [0, 0, 2, 1, 3, 3, 2, 4, 3, 5, 5, 4, 4, 0, 0, 1, 125];
-  var std_ac_luminance_values = [1, 2, 3, 0, 4, 17, 5, 18, 33, 49, 65, 6, 19, 81, 97, 7, 34, 113, 20, 50, 129, 145, 161, 8, 35, 66, 177, 193, 21, 82, 209, 240, 36, 51, 98, 114, 130, 9, 10, 22, 23, 24, 25, 26, 37, 38, 39, 40, 41, 42, 52, 53, 54, 55, 56, 57, 58, 67, 68, 69, 70, 71, 72, 73, 74, 83, 84, 85, 86, 87, 88, 89, 90, 99, 100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118, 119, 120, 121, 122, 131, 132, 133, 134, 135, 136, 137, 138, 146, 147, 148, 149, 150, 151, 152, 153, 154, 162, 163, 164, 165, 166, 167, 168, 169, 170, 178, 179, 180, 181, 182, 183, 184, 185, 186, 194, 195, 196, 197, 198, 199, 200, 201, 202, 210, 211, 212, 213, 214, 215, 216, 217, 218, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250];
-  var std_dc_chrominance_nrcodes = [0, 0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0];
+  var std_ac_luminance_nrcodes = [
+    0,
+    0,
+    2,
+    1,
+    3,
+    3,
+    2,
+    4,
+    3,
+    5,
+    5,
+    4,
+    4,
+    0,
+    0,
+    1,
+    125
+  ];
+  var std_ac_luminance_values = [
+    1,
+    2,
+    3,
+    0,
+    4,
+    17,
+    5,
+    18,
+    33,
+    49,
+    65,
+    6,
+    19,
+    81,
+    97,
+    7,
+    34,
+    113,
+    20,
+    50,
+    129,
+    145,
+    161,
+    8,
+    35,
+    66,
+    177,
+    193,
+    21,
+    82,
+    209,
+    240,
+    36,
+    51,
+    98,
+    114,
+    130,
+    9,
+    10,
+    22,
+    23,
+    24,
+    25,
+    26,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    99,
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    146,
+    147,
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    162,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    178,
+    179,
+    180,
+    181,
+    182,
+    183,
+    184,
+    185,
+    186,
+    194,
+    195,
+    196,
+    197,
+    198,
+    199,
+    200,
+    201,
+    202,
+    210,
+    211,
+    212,
+    213,
+    214,
+    215,
+    216,
+    217,
+    218,
+    225,
+    226,
+    227,
+    228,
+    229,
+    230,
+    231,
+    232,
+    233,
+    234,
+    241,
+    242,
+    243,
+    244,
+    245,
+    246,
+    247,
+    248,
+    249,
+    250
+  ];
+  var std_dc_chrominance_nrcodes = [
+    0,
+    0,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0
+  ];
   var std_dc_chrominance_values = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-  var std_ac_chrominance_nrcodes = [0, 0, 2, 1, 2, 4, 4, 3, 4, 7, 5, 4, 4, 0, 1, 2, 119];
-  var std_ac_chrominance_values = [0, 1, 2, 3, 17, 4, 5, 33, 49, 6, 18, 65, 81, 7, 97, 113, 19, 34, 50, 129, 8, 20, 66, 145, 161, 177, 193, 9, 35, 51, 82, 240, 21, 98, 114, 209, 10, 22, 36, 52, 225, 37, 241, 23, 24, 25, 26, 38, 39, 40, 41, 42, 53, 54, 55, 56, 57, 58, 67, 68, 69, 70, 71, 72, 73, 74, 83, 84, 85, 86, 87, 88, 89, 90, 99, 100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118, 119, 120, 121, 122, 130, 131, 132, 133, 134, 135, 136, 137, 138, 146, 147, 148, 149, 150, 151, 152, 153, 154, 162, 163, 164, 165, 166, 167, 168, 169, 170, 178, 179, 180, 181, 182, 183, 184, 185, 186, 194, 195, 196, 197, 198, 199, 200, 201, 202, 210, 211, 212, 213, 214, 215, 216, 217, 218, 226, 227, 228, 229, 230, 231, 232, 233, 234, 242, 243, 244, 245, 246, 247, 248, 249, 250];
+  var std_ac_chrominance_nrcodes = [
+    0,
+    0,
+    2,
+    1,
+    2,
+    4,
+    4,
+    3,
+    4,
+    7,
+    5,
+    4,
+    4,
+    0,
+    1,
+    2,
+    119
+  ];
+  var std_ac_chrominance_values = [
+    0,
+    1,
+    2,
+    3,
+    17,
+    4,
+    5,
+    33,
+    49,
+    6,
+    18,
+    65,
+    81,
+    7,
+    97,
+    113,
+    19,
+    34,
+    50,
+    129,
+    8,
+    20,
+    66,
+    145,
+    161,
+    177,
+    193,
+    9,
+    35,
+    51,
+    82,
+    240,
+    21,
+    98,
+    114,
+    209,
+    10,
+    22,
+    36,
+    52,
+    225,
+    37,
+    241,
+    23,
+    24,
+    25,
+    26,
+    38,
+    39,
+    40,
+    41,
+    42,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    99,
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    146,
+    147,
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    162,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    178,
+    179,
+    180,
+    181,
+    182,
+    183,
+    184,
+    185,
+    186,
+    194,
+    195,
+    196,
+    197,
+    198,
+    199,
+    200,
+    201,
+    202,
+    210,
+    211,
+    212,
+    213,
+    214,
+    215,
+    216,
+    217,
+    218,
+    226,
+    227,
+    228,
+    229,
+    230,
+    231,
+    232,
+    233,
+    234,
+    242,
+    243,
+    244,
+    245,
+    246,
+    247,
+    248,
+    249,
+    250
+  ];
   function initQuantTables(sf) {
-    var YQT = [16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56, 14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81, 104, 113, 92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99];
+    var YQT = [
+      16,
+      11,
+      10,
+      16,
+      24,
+      40,
+      51,
+      61,
+      12,
+      12,
+      14,
+      19,
+      26,
+      58,
+      60,
+      55,
+      14,
+      13,
+      16,
+      24,
+      40,
+      57,
+      69,
+      56,
+      14,
+      17,
+      22,
+      29,
+      51,
+      87,
+      80,
+      62,
+      18,
+      22,
+      37,
+      56,
+      68,
+      109,
+      103,
+      77,
+      24,
+      35,
+      55,
+      64,
+      81,
+      104,
+      113,
+      92,
+      49,
+      64,
+      78,
+      87,
+      103,
+      121,
+      120,
+      101,
+      72,
+      92,
+      95,
+      98,
+      112,
+      100,
+      103,
+      99
+    ];
     for (var i2 = 0; i2 < 64; i2++) {
       var t2 = ffloor((YQT[i2] * sf + 50) / 100);
       t2 = Math.min(Math.max(t2, 1), 255);
       YTable[ZigZag[i2]] = t2;
     }
-    var UVQT = [17, 18, 24, 47, 99, 99, 99, 99, 18, 21, 26, 66, 99, 99, 99, 99, 24, 26, 56, 99, 99, 99, 99, 99, 47, 66, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99];
+    var UVQT = [
+      17,
+      18,
+      24,
+      47,
+      99,
+      99,
+      99,
+      99,
+      18,
+      21,
+      26,
+      66,
+      99,
+      99,
+      99,
+      99,
+      24,
+      26,
+      56,
+      99,
+      99,
+      99,
+      99,
+      99,
+      47,
+      66,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99,
+      99
+    ];
     for (var j = 0; j < 64; j++) {
       var u2 = ffloor((UVQT[j] * sf + 50) / 100);
       u2 = Math.min(Math.max(u2, 1), 255);
       UVTable[ZigZag[j]] = u2;
     }
-    var aasf = [1, 1.387039845, 1.306562965, 1.175875602, 1, 0.785694958, 0.5411961, 0.275899379];
+    var aasf = [
+      1,
+      1.387039845,
+      1.306562965,
+      1.175875602,
+      1,
+      0.785694958,
+      0.5411961,
+      0.275899379
+    ];
     var k = 0;
     for (var row = 0; row < 8; row++) {
       for (var col = 0; col < 8; col++) {
@@ -68436,10 +70008,22 @@ function JPEGEncoder(quality) {
     return HT;
   }
   function initHuffmanTbl() {
-    YDC_HT = computeHuffmanTbl(std_dc_luminance_nrcodes, std_dc_luminance_values);
-    UVDC_HT = computeHuffmanTbl(std_dc_chrominance_nrcodes, std_dc_chrominance_values);
-    YAC_HT = computeHuffmanTbl(std_ac_luminance_nrcodes, std_ac_luminance_values);
-    UVAC_HT = computeHuffmanTbl(std_ac_chrominance_nrcodes, std_ac_chrominance_values);
+    YDC_HT = computeHuffmanTbl(
+      std_dc_luminance_nrcodes,
+      std_dc_luminance_values
+    );
+    UVDC_HT = computeHuffmanTbl(
+      std_dc_chrominance_nrcodes,
+      std_dc_chrominance_values
+    );
+    YAC_HT = computeHuffmanTbl(
+      std_ac_luminance_nrcodes,
+      std_ac_luminance_values
+    );
+    UVAC_HT = computeHuffmanTbl(
+      std_ac_chrominance_nrcodes,
+      std_ac_chrominance_values
+    );
   }
   function initCategoryNumber() {
     var nrlower = 1;
@@ -69165,6 +70749,7 @@ function WebPDecoder(imageData) {
     function J(a2, b, c3, d, e2) {
       x2(!(d % c3));
       do {
+        ;
         d -= c3, a2[b + d] = e2;
       } while (0 < d);
     }
@@ -69188,6 +70773,7 @@ function WebPDecoder(imageData) {
         n2[k + 1] = n2[k] + m3[k];
       }
       for (l2 = 0; l2 < e2; ++l2) {
+        ;
         k = d[l2], 0 < d[l2] && (f4[n2[k]++] = l2);
       }
       if (1 == n2[15])
@@ -69202,6 +70788,7 @@ function WebPDecoder(imageData) {
         if (0 > p2)
           return 0;
         for (; 0 < m3[k]; --m3[k]) {
+          ;
           d = new O2(), d.g = k, d.value = f4[l2++], J(a2, g + t2, e2, w, d), t2 = L(t2, k);
         }
       }
@@ -69304,6 +70891,7 @@ function WebPDecoder(imageData) {
     }
     function Vb(a2) {
       for (; 8 <= a2.u && a2.bb < a2.Sb; ) {
+        ;
         a2.Ra >>>= 8, a2.Ra += a2.oa[a2.pa + a2.bb] << ob - 8 >>> 0, ++a2.bb, a2.u -= 8;
       }
       db(a2) && (a2.h = 1, a2.u = 0);
@@ -69361,6 +70949,7 @@ function WebPDecoder(imageData) {
       f4 ? (c3 -= e2, a2.I -= e2 + 1 << d >>> 0) : c3 = e2 + 1;
       d = c3;
       for (e2 = 0; 256 <= d; ) {
+        ;
         e2 += 8, d >>= 8;
       }
       d = 7 ^ e2 + Id[d];
@@ -69539,7 +71128,11 @@ function WebPDecoder(imageData) {
     function fb(a2, b, c3, d, e2, f4) {
       if (0 == f4)
         for (c3 = b + c3; b < c3; ) {
-          f4 = a2[b++], ra(d, (f4[0] >> 24 | f4[1] >> 8 & 65280 | f4[2] << 8 & 16711680 | f4[3] << 24) >>> 0), e2 += 32;
+          ;
+          f4 = a2[b++], ra(
+            d,
+            (f4[0] >> 24 | f4[1] >> 8 & 65280 | f4[2] << 8 & 16711680 | f4[3] << 24) >>> 0
+          ), e2 += 32;
         }
       else
         I(d, e2, a2, b, c3);
@@ -69601,6 +71194,7 @@ function WebPDecoder(imageData) {
       var c3 = a2.T, d = b.ba.f.RGBA, e2 = d.eb, f4 = d.fb + a2.ka * d.A, g = P[b.ba.S], h2 = a2.y, k = a2.O, l2 = a2.f, m3 = a2.N, n2 = a2.ea, r2 = a2.W, q = b.cc, t2 = b.dc, v2 = b.Mc, p2 = b.Nc, u2 = a2.ka, w = a2.ka + a2.T, y3 = a2.U, A2 = y3 + 1 >> 1;
       0 == u2 ? g(h2, k, null, null, l2, m3, n2, r2, l2, m3, n2, r2, e2, f4, null, null, y3) : (g(b.ec, b.fc, h2, k, q, t2, v2, p2, l2, m3, n2, r2, e2, f4 - d.A, e2, f4, y3), ++c3);
       for (; u2 + 2 < w; u2 += 2) {
+        ;
         q = l2, t2 = m3, v2 = n2, p2 = r2, m3 += a2.Rc, r2 += a2.Rc, f4 += 2 * d.A, k += 2 * a2.fa, g(h2, k - a2.fa, h2, k, q, t2, v2, p2, l2, m3, n2, r2, e2, f4 - d.A, e2, f4, y3);
       }
       k += a2.fa;
@@ -69655,9 +71249,11 @@ function WebPDecoder(imageData) {
       }
       if (d && !jc) {
         for (a2 = 0; 256 > a2; ++a2) {
+          ;
           Yd[a2] = 89858 * (a2 - 128) + Ba >> Wa, Zd[a2] = -22014 * (a2 - 128) + Ba, $d[a2] = -45773 * (a2 - 128), ae[a2] = 113618 * (a2 - 128) + Ba >> Wa;
         }
         for (a2 = ta; a2 < Eb; ++a2) {
+          ;
           b = 76283 * (a2 - 16) + Ba >> Wa, be[a2 - ta] = ga(b, 255), ce[a2 - ta] = ga(b + 8 >> 4, 15);
         }
         jc = 1;
@@ -69958,6 +71554,7 @@ function WebPDecoder(imageData) {
               ++k;
               if (k >= d && (k = 0, ++h2, null != g && h2 <= f4 && !(h2 % 16) && g(a2, h2), null != p2))
                 for (; r2 < n2; ) {
+                  ;
                   A2 = b[r2++], p2.X[(506832829 * A2 & 4294967295) >>> p2.Mb] = A2;
                 }
             } else if (280 > A2) {
@@ -69976,17 +71573,20 @@ function WebPDecoder(imageData) {
                 }
               n2 += A2;
               for (k += A2; k >= d; ) {
+                ;
                 k -= d, ++h2, null != g && h2 <= f4 && !(h2 % 16) && g(a2, h2);
               }
               x2(n2 <= e2);
               k & u2 && (w = ha(m3, k, h2));
               if (null != p2)
                 for (; r2 < n2; ) {
+                  ;
                   A2 = b[r2++], p2.X[(506832829 * A2 & 4294967295) >>> p2.Mb] = A2;
                 }
             } else if (A2 < t2) {
               y3 = A2 - 280;
               for (x2(null != p2); r2 < n2; ) {
+                ;
                 A2 = b[r2++], p2.X[(506832829 * A2 & 4294967295) >>> p2.Mb] = A2;
               }
               A2 = n2;
@@ -70199,6 +71799,7 @@ function WebPDecoder(imageData) {
                           Oa2 || (Wa2.a = 3);
                           ya2 = Oa2;
                         }
+                        ;
                         (ya2 = ya2 && !Ka.h) && (Ia2 = Z(db2, eb2, 8, oa2, za2));
                         ya2 && 0 != Ia2 ? Aa2 = Ia2 : (ta2.a = 3, Aa2 = 0);
                       }
@@ -70620,6 +72221,7 @@ function WebPDecoder(imageData) {
         for (e2 = 0; 8 > e2; ++e2) {
           for (d = 0; 3 > d; ++d) {
             for (h2 = 0; 11 > h2; ++h2) {
+              ;
               k = K(f4, Ee[c3][e2][d][h2]) ? na(f4, 8) : Fe[c3][e2][d][h2], g.Wc[c3][e2].Yb[d][h2] = k;
             }
           }
@@ -70754,6 +72356,7 @@ function WebPDecoder(imageData) {
             for (p2 = 0; 4 > p2; ++p2) {
               var z2 = N2 & 1;
               for (B = w = 0; 4 > B; ++B) {
+                ;
                 E = z2 + (C & 1), E = oa(k, A2, E, n2.Sc, y3, h2, r2), z2 = E > y3, C = C >> 1 | z2 << 7, w = w << 2 | (3 < E ? 3 : 1 < E ? 2 : 0 != h2[r2 + 0]), r2 += 16;
               }
               C >>= 4;
@@ -70769,6 +72372,7 @@ function WebPDecoder(imageData) {
               for (p2 = 0; 2 > p2; ++p2) {
                 z2 = N2 & 1;
                 for (B = 0; 2 > B; ++B) {
+                  ;
                   E = z2 + (C & 1), E = oa(k, l2[2], E, n2.Qc, 0, h2, r2), z2 = 0 < E, C = C >> 1 | z2 << 3, w = w << 2 | (3 < E ? 3 : 1 < E ? 2 : 0 != h2[r2 + 0]), r2 += 16;
                 }
                 C >>= 2;
@@ -70797,6 +72401,7 @@ function WebPDecoder(imageData) {
         g = 0 < c3.L && c3.M >= c3.zb && c3.M <= c3.Va;
         if (0 == c3.Aa)
           a: {
+            ;
             f4.M = c3.M, f4.uc = g, Oc(c3, f4), e2 = 1;
             w = c3.D;
             f4 = w.Nb;
@@ -71081,6 +72686,7 @@ function WebPDecoder(imageData) {
         b++;
       }
       for (f4 = e2 = 0; 4 > f4; ++f4) {
+        ;
         a2 = g[e2 + 0] + 4, h2 = a2 + g[e2 + 8], k = a2 - g[e2 + 8], l2 = (35468 * g[e2 + 4] >> 16) - da(g[e2 + 12]), m3 = da(g[e2 + 4]) + (35468 * g[e2 + 12] >> 16), qa(c3, d, 0, 0, h2 + m3), qa(c3, d, 1, 0, k + l2), qa(c3, d, 2, 0, k - l2), qa(c3, d, 3, 0, h2 - m3), e2++, d += 32;
       }
     }
@@ -71128,6 +72734,7 @@ function WebPDecoder(imageData) {
         e2[12 + f4] = l2 - k;
       }
       for (f4 = 0; 4 > f4; ++f4) {
+        ;
         a2 = e2[0 + 4 * f4] + 3, g = a2 + e2[3 + 4 * f4], h2 = e2[1 + 4 * f4] + e2[2 + 4 * f4], k = e2[1 + 4 * f4] - e2[2 + 4 * f4], l2 = a2 - e2[3 + 4 * f4], c3[d + 0] = g + h2 >> 3, c3[d + 16] = l2 + k >> 3, c3[d + 32] = g - h2 >> 3, c3[d + 48] = l2 - k >> 3, d += 64;
       }
     }
@@ -71196,7 +72803,12 @@ function WebPDecoder(imageData) {
       return a2 + 2 * b + c3 + 2 >> 2;
     }
     function ff2(a2, b) {
-      var c3 = b - 32, c3 = new Uint8Array([z(a2[c3 - 1], a2[c3 + 0], a2[c3 + 1]), z(a2[c3 + 0], a2[c3 + 1], a2[c3 + 2]), z(a2[c3 + 1], a2[c3 + 2], a2[c3 + 3]), z(a2[c3 + 2], a2[c3 + 3], a2[c3 + 4])]), d;
+      var c3 = b - 32, c3 = new Uint8Array([
+        z(a2[c3 - 1], a2[c3 + 0], a2[c3 + 1]),
+        z(a2[c3 + 0], a2[c3 + 1], a2[c3 + 2]),
+        z(a2[c3 + 1], a2[c3 + 2], a2[c3 + 3]),
+        z(a2[c3 + 2], a2[c3 + 3], a2[c3 + 4])
+      ]), d;
       for (d = 0; 4 > d; ++d) {
         I(a2, b + 32 * d, c3, 0, c3.length);
       }
@@ -71360,12 +72972,14 @@ function WebPDecoder(imageData) {
     function bf(a2, b, c3, d) {
       var e2;
       for (e2 = 3; 0 < e2; --e2) {
+        ;
         b += 4 * c3, gd(a2, b, c3, d);
       }
     }
     function cf(a2, b, c3, d) {
       var e2;
       for (e2 = 3; 0 < e2; --e2) {
+        ;
         b += 4, hd(a2, b, c3, d);
       }
     }
@@ -71410,12 +73024,14 @@ function WebPDecoder(imageData) {
     function Ye(a2, b, c3, d, e2, f4) {
       var g;
       for (g = 3; 0 < g; --g) {
+        ;
         b += 4 * c3, Fa(a2, b, c3, 1, 16, d, e2, f4);
       }
     }
     function Ze(a2, b, c3, d, e2, f4) {
       var g;
       for (g = 3; 0 < g; --g) {
+        ;
         b += 4, Fa(a2, b, 1, c3, 16, d, e2, f4);
       }
     }
@@ -71497,6 +73113,7 @@ function WebPDecoder(imageData) {
     function Rb(a2, b, c3, d, e2, f4, g) {
       a2 = null == a2 ? 0 : a2[b + 0];
       for (b = 0; b < g; ++b) {
+        ;
         e2[f4 + b] = a2 + c3[d + b] & 255, a2 = e2[f4 + b];
       }
     }
@@ -71516,6 +73133,7 @@ function WebPDecoder(imageData) {
       else {
         var h2 = a2[b + 0], k = h2, l2 = h2, m3;
         for (m3 = 0; m3 < g; ++m3) {
+          ;
           h2 = a2[b + m3], k = l2 + h2 - k, l2 = c3[d + m3] + (k & -256 ? 0 > k ? 0 : 255 : k) & 255, k = h2, e2[f4 + m3] = l2;
         }
       }
@@ -71648,6 +73266,7 @@ function WebPDecoder(imageData) {
                       }
                       p2 += v2;
                       for (l2 += v2; l2 >= q; ) {
+                        ;
                         l2 -= q, ++k, k <= b && !(k % 16) && Ib(g, k);
                       }
                       p2 < w && l2 & y3 && (A2 = ha(n2, l2, k));
@@ -71771,7 +73390,9 @@ function WebPDecoder(imageData) {
       return Sb((19077 * a2 >> 8) + (26149 * b >> 8) - 14234);
     }
     function nb(a2, b, c3) {
-      return Sb((19077 * a2 >> 8) - (6419 * b >> 8) - (13320 * c3 >> 8) + 8708);
+      return Sb(
+        (19077 * a2 >> 8) - (6419 * b >> 8) - (13320 * c3 >> 8) + 8708
+      );
     }
     function Pa(a2, b) {
       return Sb((19077 * a2 >> 8) + (33050 * b >> 8) - 17685);
@@ -71841,6 +73462,7 @@ function WebPDecoder(imageData) {
         g[h2 + 32 * c3 - 1] = 129;
       }
       for (c3 = 0; 8 > c3; ++c3) {
+        ;
         k[l2 + 32 * c3 - 1] = 129, m3[n2 + 32 * c3 - 1] = 129;
       }
       0 < e2 ? g[h2 - 1 - 32] = k[l2 - 1 - 32] = m3[n2 - 1 - 32] = 129 : (M(g, h2 - 32 - 1, 127, 21), M(k, l2 - 32 - 1, 127, 9), M(m3, n2 - 32 - 1, 127, 9));
@@ -71864,6 +73486,7 @@ function WebPDecoder(imageData) {
             u2[w + 128 + c3] = u2[w + 256 + c3] = u2[w + 384 + c3] = u2[w + 0 + c3];
           }
           for (c3 = 0; 16 > c3; ++c3, p2 <<= 2) {
+            ;
             u2 = g, w = h2 + zd[c3], W[r2.Ob[c3]](u2, w), yd(p2, v2, 16 * +c3, u2, w);
           }
         } else if (u2 = xd(d, e2, r2.Ob[0]), Y[u2](g, h2), 0 != p2)
@@ -72227,7 +73850,290 @@ function WebPDecoder(imageData) {
       null != c3 && c3.fd && (a2 = Bd(d));
       return a2;
     }
-    var xb = 64, Hd = [0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65535, 131071, 262143, 524287, 1048575, 2097151, 4194303, 8388607, 16777215], Gd = 24, ob = 32, Xb = 8, Id = [0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7];
+    var xb = 64, Hd = [
+      0,
+      1,
+      3,
+      7,
+      15,
+      31,
+      63,
+      127,
+      255,
+      511,
+      1023,
+      2047,
+      4095,
+      8191,
+      16383,
+      32767,
+      65535,
+      131071,
+      262143,
+      524287,
+      1048575,
+      2097151,
+      4194303,
+      8388607,
+      16777215
+    ], Gd = 24, ob = 32, Xb = 8, Id = [
+      0,
+      0,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7,
+      7
+    ];
     X("Predictor0", "PredictorAdd0");
     self2.Predictor0 = function() {
       return 4278190080;
@@ -72292,22 +74198,890 @@ function WebPDecoder(imageData) {
     X("Predictor12", "PredictorAdd12");
     X("Predictor13", "PredictorAdd13");
     var fe = self2.PredictorAdd2;
-    ec("ColorIndexInverseTransform", "MapARGB", "32b", function(a2) {
-      return a2 >> 8 & 255;
-    }, function(a2) {
-      return a2;
-    });
-    ec("VP8LColorIndexInverseTransformAlpha", "MapAlpha", "8b", function(a2) {
-      return a2;
-    }, function(a2) {
-      return a2 >> 8 & 255;
-    });
+    ec(
+      "ColorIndexInverseTransform",
+      "MapARGB",
+      "32b",
+      function(a2) {
+        return a2 >> 8 & 255;
+      },
+      function(a2) {
+        return a2;
+      }
+    );
+    ec(
+      "VP8LColorIndexInverseTransformAlpha",
+      "MapAlpha",
+      "8b",
+      function(a2) {
+        return a2;
+      },
+      function(a2) {
+        return a2 >> 8 & 255;
+      }
+    );
     var rc = self2.ColorIndexInverseTransform, ke = self2.MapARGB, he = self2.VP8LColorIndexInverseTransformAlpha, le = self2.MapAlpha, pc, qc = self2.VP8LPredictorsAdd = [];
     qc.length = 16;
     (self2.VP8LPredictors = []).length = 16;
     (self2.VP8LPredictorsAdd_C = []).length = 16;
     (self2.VP8LPredictors_C = []).length = 16;
-    var Fb, sc, Gb, Hb, xc, uc, bd = V(511), cd = V(2041), dd = V(225), ed = V(767), ad = 0, Qb = cd, mb = dd, R = ed, U = bd, Ca = 0, Ua = 1, tc = 2, Va = 3, ya = 4, Db = 5, wc = 6, zb = 7, Ab = 8, Ja = 9, Bb = 10, pe = [2, 3, 7], oe = [3, 3, 11], Dc2 = [280, 256, 256, 256, 40], qe = [0, 1, 1, 1, 0], ne = [17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], de = [24, 7, 23, 25, 40, 6, 39, 41, 22, 26, 38, 42, 56, 5, 55, 57, 21, 27, 54, 58, 37, 43, 72, 4, 71, 73, 20, 28, 53, 59, 70, 74, 36, 44, 88, 69, 75, 52, 60, 3, 87, 89, 19, 29, 86, 90, 35, 45, 68, 76, 85, 91, 51, 61, 104, 2, 103, 105, 18, 30, 102, 106, 34, 46, 84, 92, 67, 77, 101, 107, 50, 62, 120, 1, 119, 121, 83, 93, 17, 31, 100, 108, 66, 78, 118, 122, 33, 47, 117, 123, 49, 63, 99, 109, 82, 94, 0, 116, 124, 65, 79, 16, 32, 98, 110, 48, 115, 125, 81, 95, 64, 114, 126, 97, 111, 80, 113, 127, 96, 112], me = [2954, 2956, 2958, 2962, 2970, 2986, 3018, 3082, 3212, 3468, 3980, 5004], ie = 8, Lb = [4, 5, 6, 7, 8, 9, 10, 10, 11, 12, 13, 14, 15, 16, 17, 17, 18, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 25, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 93, 95, 96, 98, 100, 101, 102, 104, 106, 108, 110, 112, 114, 116, 118, 122, 124, 126, 128, 130, 132, 134, 136, 138, 140, 143, 145, 148, 151, 154, 157], Mb = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104, 106, 108, 110, 112, 114, 116, 119, 122, 125, 128, 131, 134, 137, 140, 143, 146, 149, 152, 155, 158, 161, 164, 167, 170, 173, 177, 181, 185, 189, 193, 197, 201, 205, 209, 213, 217, 221, 225, 229, 234, 239, 245, 249, 254, 259, 264, 269, 274, 279, 284], oa = null, He = [[173, 148, 140, 0], [176, 155, 140, 135, 0], [180, 157, 141, 134, 130, 0], [254, 254, 243, 230, 196, 177, 153, 140, 133, 130, 129, 0]], Ie = [0, 1, 4, 8, 5, 2, 3, 6, 9, 12, 13, 10, 7, 11, 14, 15], Mc = [-0, 1, -1, 2, -2, 3, 4, 6, -3, 5, -4, -5, -6, 7, -7, 8, -8, -9], Fe = [[[[128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128], [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128], [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128]], [[253, 136, 254, 255, 228, 219, 128, 128, 128, 128, 128], [189, 129, 242, 255, 227, 213, 255, 219, 128, 128, 128], [106, 126, 227, 252, 214, 209, 255, 255, 128, 128, 128]], [[1, 98, 248, 255, 236, 226, 255, 255, 128, 128, 128], [181, 133, 238, 254, 221, 234, 255, 154, 128, 128, 128], [78, 134, 202, 247, 198, 180, 255, 219, 128, 128, 128]], [[1, 185, 249, 255, 243, 255, 128, 128, 128, 128, 128], [184, 150, 247, 255, 236, 224, 128, 128, 128, 128, 128], [77, 110, 216, 255, 236, 230, 128, 128, 128, 128, 128]], [[1, 101, 251, 255, 241, 255, 128, 128, 128, 128, 128], [170, 139, 241, 252, 236, 209, 255, 255, 128, 128, 128], [37, 116, 196, 243, 228, 255, 255, 255, 128, 128, 128]], [[1, 204, 254, 255, 245, 255, 128, 128, 128, 128, 128], [207, 160, 250, 255, 238, 128, 128, 128, 128, 128, 128], [102, 103, 231, 255, 211, 171, 128, 128, 128, 128, 128]], [[1, 152, 252, 255, 240, 255, 128, 128, 128, 128, 128], [177, 135, 243, 255, 234, 225, 128, 128, 128, 128, 128], [80, 129, 211, 255, 194, 224, 128, 128, 128, 128, 128]], [[1, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128], [246, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128], [255, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128]]], [[[198, 35, 237, 223, 193, 187, 162, 160, 145, 155, 62], [131, 45, 198, 221, 172, 176, 220, 157, 252, 221, 1], [68, 47, 146, 208, 149, 167, 221, 162, 255, 223, 128]], [[1, 149, 241, 255, 221, 224, 255, 255, 128, 128, 128], [184, 141, 234, 253, 222, 220, 255, 199, 128, 128, 128], [81, 99, 181, 242, 176, 190, 249, 202, 255, 255, 128]], [[1, 129, 232, 253, 214, 197, 242, 196, 255, 255, 128], [99, 121, 210, 250, 201, 198, 255, 202, 128, 128, 128], [23, 91, 163, 242, 170, 187, 247, 210, 255, 255, 128]], [[1, 200, 246, 255, 234, 255, 128, 128, 128, 128, 128], [109, 178, 241, 255, 231, 245, 255, 255, 128, 128, 128], [44, 130, 201, 253, 205, 192, 255, 255, 128, 128, 128]], [[1, 132, 239, 251, 219, 209, 255, 165, 128, 128, 128], [94, 136, 225, 251, 218, 190, 255, 255, 128, 128, 128], [22, 100, 174, 245, 186, 161, 255, 199, 128, 128, 128]], [[1, 182, 249, 255, 232, 235, 128, 128, 128, 128, 128], [124, 143, 241, 255, 227, 234, 128, 128, 128, 128, 128], [35, 77, 181, 251, 193, 211, 255, 205, 128, 128, 128]], [[1, 157, 247, 255, 236, 231, 255, 255, 128, 128, 128], [121, 141, 235, 255, 225, 227, 255, 255, 128, 128, 128], [45, 99, 188, 251, 195, 217, 255, 224, 128, 128, 128]], [[1, 1, 251, 255, 213, 255, 128, 128, 128, 128, 128], [203, 1, 248, 255, 255, 128, 128, 128, 128, 128, 128], [137, 1, 177, 255, 224, 255, 128, 128, 128, 128, 128]]], [[[253, 9, 248, 251, 207, 208, 255, 192, 128, 128, 128], [175, 13, 224, 243, 193, 185, 249, 198, 255, 255, 128], [73, 17, 171, 221, 161, 179, 236, 167, 255, 234, 128]], [[1, 95, 247, 253, 212, 183, 255, 255, 128, 128, 128], [239, 90, 244, 250, 211, 209, 255, 255, 128, 128, 128], [155, 77, 195, 248, 188, 195, 255, 255, 128, 128, 128]], [[1, 24, 239, 251, 218, 219, 255, 205, 128, 128, 128], [201, 51, 219, 255, 196, 186, 128, 128, 128, 128, 128], [69, 46, 190, 239, 201, 218, 255, 228, 128, 128, 128]], [[1, 191, 251, 255, 255, 128, 128, 128, 128, 128, 128], [223, 165, 249, 255, 213, 255, 128, 128, 128, 128, 128], [141, 124, 248, 255, 255, 128, 128, 128, 128, 128, 128]], [[1, 16, 248, 255, 255, 128, 128, 128, 128, 128, 128], [190, 36, 230, 255, 236, 255, 128, 128, 128, 128, 128], [149, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128]], [[1, 226, 255, 128, 128, 128, 128, 128, 128, 128, 128], [247, 192, 255, 128, 128, 128, 128, 128, 128, 128, 128], [240, 128, 255, 128, 128, 128, 128, 128, 128, 128, 128]], [[1, 134, 252, 255, 255, 128, 128, 128, 128, 128, 128], [213, 62, 250, 255, 255, 128, 128, 128, 128, 128, 128], [55, 93, 255, 128, 128, 128, 128, 128, 128, 128, 128]], [[128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128], [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128], [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128]]], [[[202, 24, 213, 235, 186, 191, 220, 160, 240, 175, 255], [126, 38, 182, 232, 169, 184, 228, 174, 255, 187, 128], [61, 46, 138, 219, 151, 178, 240, 170, 255, 216, 128]], [[1, 112, 230, 250, 199, 191, 247, 159, 255, 255, 128], [166, 109, 228, 252, 211, 215, 255, 174, 128, 128, 128], [39, 77, 162, 232, 172, 180, 245, 178, 255, 255, 128]], [[1, 52, 220, 246, 198, 199, 249, 220, 255, 255, 128], [124, 74, 191, 243, 183, 193, 250, 221, 255, 255, 128], [24, 71, 130, 219, 154, 170, 243, 182, 255, 255, 128]], [[1, 182, 225, 249, 219, 240, 255, 224, 128, 128, 128], [149, 150, 226, 252, 216, 205, 255, 171, 128, 128, 128], [28, 108, 170, 242, 183, 194, 254, 223, 255, 255, 128]], [[1, 81, 230, 252, 204, 203, 255, 192, 128, 128, 128], [123, 102, 209, 247, 188, 196, 255, 233, 128, 128, 128], [20, 95, 153, 243, 164, 173, 255, 203, 128, 128, 128]], [[1, 222, 248, 255, 216, 213, 128, 128, 128, 128, 128], [168, 175, 246, 252, 235, 205, 255, 255, 128, 128, 128], [47, 116, 215, 255, 211, 212, 255, 255, 128, 128, 128]], [[1, 121, 236, 253, 212, 214, 255, 255, 128, 128, 128], [141, 84, 213, 252, 201, 202, 255, 219, 128, 128, 128], [42, 80, 160, 240, 162, 185, 255, 205, 128, 128, 128]], [[1, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128], [244, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128], [238, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128]]]], Ke = [[[231, 120, 48, 89, 115, 113, 120, 152, 112], [152, 179, 64, 126, 170, 118, 46, 70, 95], [175, 69, 143, 80, 85, 82, 72, 155, 103], [56, 58, 10, 171, 218, 189, 17, 13, 152], [114, 26, 17, 163, 44, 195, 21, 10, 173], [121, 24, 80, 195, 26, 62, 44, 64, 85], [144, 71, 10, 38, 171, 213, 144, 34, 26], [170, 46, 55, 19, 136, 160, 33, 206, 71], [63, 20, 8, 114, 114, 208, 12, 9, 226], [81, 40, 11, 96, 182, 84, 29, 16, 36]], [[134, 183, 89, 137, 98, 101, 106, 165, 148], [72, 187, 100, 130, 157, 111, 32, 75, 80], [66, 102, 167, 99, 74, 62, 40, 234, 128], [41, 53, 9, 178, 241, 141, 26, 8, 107], [74, 43, 26, 146, 73, 166, 49, 23, 157], [65, 38, 105, 160, 51, 52, 31, 115, 128], [104, 79, 12, 27, 217, 255, 87, 17, 7], [87, 68, 71, 44, 114, 51, 15, 186, 23], [47, 41, 14, 110, 182, 183, 21, 17, 194], [66, 45, 25, 102, 197, 189, 23, 18, 22]], [[88, 88, 147, 150, 42, 46, 45, 196, 205], [43, 97, 183, 117, 85, 38, 35, 179, 61], [39, 53, 200, 87, 26, 21, 43, 232, 171], [56, 34, 51, 104, 114, 102, 29, 93, 77], [39, 28, 85, 171, 58, 165, 90, 98, 64], [34, 22, 116, 206, 23, 34, 43, 166, 73], [107, 54, 32, 26, 51, 1, 81, 43, 31], [68, 25, 106, 22, 64, 171, 36, 225, 114], [34, 19, 21, 102, 132, 188, 16, 76, 124], [62, 18, 78, 95, 85, 57, 50, 48, 51]], [[193, 101, 35, 159, 215, 111, 89, 46, 111], [60, 148, 31, 172, 219, 228, 21, 18, 111], [112, 113, 77, 85, 179, 255, 38, 120, 114], [40, 42, 1, 196, 245, 209, 10, 25, 109], [88, 43, 29, 140, 166, 213, 37, 43, 154], [61, 63, 30, 155, 67, 45, 68, 1, 209], [100, 80, 8, 43, 154, 1, 51, 26, 71], [142, 78, 78, 16, 255, 128, 34, 197, 171], [41, 40, 5, 102, 211, 183, 4, 1, 221], [51, 50, 17, 168, 209, 192, 23, 25, 82]], [[138, 31, 36, 171, 27, 166, 38, 44, 229], [67, 87, 58, 169, 82, 115, 26, 59, 179], [63, 59, 90, 180, 59, 166, 93, 73, 154], [40, 40, 21, 116, 143, 209, 34, 39, 175], [47, 15, 16, 183, 34, 223, 49, 45, 183], [46, 17, 33, 183, 6, 98, 15, 32, 183], [57, 46, 22, 24, 128, 1, 54, 17, 37], [65, 32, 73, 115, 28, 128, 23, 128, 205], [40, 3, 9, 115, 51, 192, 18, 6, 223], [87, 37, 9, 115, 59, 77, 64, 21, 47]], [[104, 55, 44, 218, 9, 54, 53, 130, 226], [64, 90, 70, 205, 40, 41, 23, 26, 57], [54, 57, 112, 184, 5, 41, 38, 166, 213], [30, 34, 26, 133, 152, 116, 10, 32, 134], [39, 19, 53, 221, 26, 114, 32, 73, 255], [31, 9, 65, 234, 2, 15, 1, 118, 73], [75, 32, 12, 51, 192, 255, 160, 43, 51], [88, 31, 35, 67, 102, 85, 55, 186, 85], [56, 21, 23, 111, 59, 205, 45, 37, 192], [55, 38, 70, 124, 73, 102, 1, 34, 98]], [[125, 98, 42, 88, 104, 85, 117, 175, 82], [95, 84, 53, 89, 128, 100, 113, 101, 45], [75, 79, 123, 47, 51, 128, 81, 171, 1], [57, 17, 5, 71, 102, 57, 53, 41, 49], [38, 33, 13, 121, 57, 73, 26, 1, 85], [41, 10, 67, 138, 77, 110, 90, 47, 114], [115, 21, 2, 10, 102, 255, 166, 23, 6], [101, 29, 16, 10, 85, 128, 101, 196, 26], [57, 18, 10, 102, 102, 213, 34, 20, 43], [117, 20, 15, 36, 163, 128, 68, 1, 26]], [[102, 61, 71, 37, 34, 53, 31, 243, 192], [69, 60, 71, 38, 73, 119, 28, 222, 37], [68, 45, 128, 34, 1, 47, 11, 245, 171], [62, 17, 19, 70, 146, 85, 55, 62, 70], [37, 43, 37, 154, 100, 163, 85, 160, 1], [63, 9, 92, 136, 28, 64, 32, 201, 85], [75, 15, 9, 9, 64, 255, 184, 119, 16], [86, 6, 28, 5, 64, 255, 25, 248, 1], [56, 8, 17, 132, 137, 255, 55, 116, 128], [58, 15, 20, 82, 135, 57, 26, 121, 40]], [[164, 50, 31, 137, 154, 133, 25, 35, 218], [51, 103, 44, 131, 131, 123, 31, 6, 158], [86, 40, 64, 135, 148, 224, 45, 183, 128], [22, 26, 17, 131, 240, 154, 14, 1, 209], [45, 16, 21, 91, 64, 222, 7, 1, 197], [56, 21, 39, 155, 60, 138, 23, 102, 213], [83, 12, 13, 54, 192, 255, 68, 47, 28], [85, 26, 85, 85, 128, 128, 32, 146, 171], [18, 11, 7, 63, 144, 171, 4, 4, 246], [35, 27, 10, 146, 174, 171, 12, 26, 128]], [[190, 80, 35, 99, 180, 80, 126, 54, 45], [85, 126, 47, 87, 176, 51, 41, 20, 32], [101, 75, 128, 139, 118, 146, 116, 128, 85], [56, 41, 15, 176, 236, 85, 37, 9, 62], [71, 30, 17, 119, 118, 255, 17, 18, 138], [101, 38, 60, 138, 55, 70, 43, 26, 142], [146, 36, 19, 30, 171, 255, 97, 27, 20], [138, 45, 61, 62, 219, 1, 81, 188, 64], [32, 41, 20, 117, 151, 142, 20, 21, 163], [112, 19, 12, 61, 195, 128, 48, 4, 24]]], Ee = [[[[255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[176, 246, 255, 255, 255, 255, 255, 255, 255, 255, 255], [223, 241, 252, 255, 255, 255, 255, 255, 255, 255, 255], [249, 253, 253, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 244, 252, 255, 255, 255, 255, 255, 255, 255, 255], [234, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255], [253, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 246, 254, 255, 255, 255, 255, 255, 255, 255, 255], [239, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255], [254, 255, 254, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 248, 254, 255, 255, 255, 255, 255, 255, 255, 255], [251, 255, 254, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255], [251, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255], [254, 255, 254, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 254, 253, 255, 254, 255, 255, 255, 255, 255, 255], [250, 255, 254, 255, 254, 255, 255, 255, 255, 255, 255], [254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]]], [[[217, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [225, 252, 241, 253, 255, 255, 254, 255, 255, 255, 255], [234, 250, 241, 250, 253, 255, 253, 254, 255, 255, 255]], [[255, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255], [223, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255], [238, 253, 254, 254, 255, 255, 255, 255, 255, 255, 255]], [[255, 248, 254, 255, 255, 255, 255, 255, 255, 255, 255], [249, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 253, 255, 255, 255, 255, 255, 255, 255, 255, 255], [247, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255], [252, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255], [253, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 254, 253, 255, 255, 255, 255, 255, 255, 255, 255], [250, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]]], [[[186, 251, 250, 255, 255, 255, 255, 255, 255, 255, 255], [234, 251, 244, 254, 255, 255, 255, 255, 255, 255, 255], [251, 251, 243, 253, 254, 255, 254, 255, 255, 255, 255]], [[255, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255], [236, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255], [251, 253, 253, 254, 254, 255, 255, 255, 255, 255, 255]], [[255, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255], [254, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255], [254, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255], [254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]]], [[[248, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [250, 254, 252, 254, 255, 255, 255, 255, 255, 255, 255], [248, 254, 249, 253, 255, 255, 255, 255, 255, 255, 255]], [[255, 253, 253, 255, 255, 255, 255, 255, 255, 255, 255], [246, 253, 253, 255, 255, 255, 255, 255, 255, 255, 255], [252, 254, 251, 254, 254, 255, 255, 255, 255, 255, 255]], [[255, 254, 252, 255, 255, 255, 255, 255, 255, 255, 255], [248, 254, 253, 255, 255, 255, 255, 255, 255, 255, 255], [253, 255, 254, 254, 255, 255, 255, 255, 255, 255, 255]], [[255, 251, 254, 255, 255, 255, 255, 255, 255, 255, 255], [245, 251, 254, 255, 255, 255, 255, 255, 255, 255, 255], [253, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 251, 253, 255, 255, 255, 255, 255, 255, 255, 255], [252, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255], [255, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 252, 255, 255, 255, 255, 255, 255, 255, 255, 255], [249, 255, 254, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 254, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 255, 253, 255, 255, 255, 255, 255, 255, 255, 255], [250, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]], [[255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255], [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]]]], Ge = [0, 1, 2, 3, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 0], Nc, Y = [], W = [], ka = [], Za, fd2, Nb, pa, Ob, Xc, Tc2, Yc, Uc, Zc, Vc, $c, Wc, Rc, Pc, Sc2, Qc, re = 1, Cc = 2, ia = [], za, vc, fc, Fc, P = [];
+    var Fb, sc, Gb, Hb, xc, uc, bd = V(511), cd = V(2041), dd = V(225), ed = V(767), ad = 0, Qb = cd, mb = dd, R = ed, U = bd, Ca = 0, Ua = 1, tc = 2, Va = 3, ya = 4, Db = 5, wc = 6, zb = 7, Ab = 8, Ja = 9, Bb = 10, pe = [2, 3, 7], oe = [3, 3, 11], Dc2 = [280, 256, 256, 256, 40], qe = [0, 1, 1, 1, 0], ne = [17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], de = [
+      24,
+      7,
+      23,
+      25,
+      40,
+      6,
+      39,
+      41,
+      22,
+      26,
+      38,
+      42,
+      56,
+      5,
+      55,
+      57,
+      21,
+      27,
+      54,
+      58,
+      37,
+      43,
+      72,
+      4,
+      71,
+      73,
+      20,
+      28,
+      53,
+      59,
+      70,
+      74,
+      36,
+      44,
+      88,
+      69,
+      75,
+      52,
+      60,
+      3,
+      87,
+      89,
+      19,
+      29,
+      86,
+      90,
+      35,
+      45,
+      68,
+      76,
+      85,
+      91,
+      51,
+      61,
+      104,
+      2,
+      103,
+      105,
+      18,
+      30,
+      102,
+      106,
+      34,
+      46,
+      84,
+      92,
+      67,
+      77,
+      101,
+      107,
+      50,
+      62,
+      120,
+      1,
+      119,
+      121,
+      83,
+      93,
+      17,
+      31,
+      100,
+      108,
+      66,
+      78,
+      118,
+      122,
+      33,
+      47,
+      117,
+      123,
+      49,
+      63,
+      99,
+      109,
+      82,
+      94,
+      0,
+      116,
+      124,
+      65,
+      79,
+      16,
+      32,
+      98,
+      110,
+      48,
+      115,
+      125,
+      81,
+      95,
+      64,
+      114,
+      126,
+      97,
+      111,
+      80,
+      113,
+      127,
+      96,
+      112
+    ], me = [
+      2954,
+      2956,
+      2958,
+      2962,
+      2970,
+      2986,
+      3018,
+      3082,
+      3212,
+      3468,
+      3980,
+      5004
+    ], ie = 8, Lb = [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      17,
+      18,
+      19,
+      20,
+      20,
+      21,
+      21,
+      22,
+      22,
+      23,
+      23,
+      24,
+      25,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      91,
+      93,
+      95,
+      96,
+      98,
+      100,
+      101,
+      102,
+      104,
+      106,
+      108,
+      110,
+      112,
+      114,
+      116,
+      118,
+      122,
+      124,
+      126,
+      128,
+      130,
+      132,
+      134,
+      136,
+      138,
+      140,
+      143,
+      145,
+      148,
+      151,
+      154,
+      157
+    ], Mb = [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      60,
+      62,
+      64,
+      66,
+      68,
+      70,
+      72,
+      74,
+      76,
+      78,
+      80,
+      82,
+      84,
+      86,
+      88,
+      90,
+      92,
+      94,
+      96,
+      98,
+      100,
+      102,
+      104,
+      106,
+      108,
+      110,
+      112,
+      114,
+      116,
+      119,
+      122,
+      125,
+      128,
+      131,
+      134,
+      137,
+      140,
+      143,
+      146,
+      149,
+      152,
+      155,
+      158,
+      161,
+      164,
+      167,
+      170,
+      173,
+      177,
+      181,
+      185,
+      189,
+      193,
+      197,
+      201,
+      205,
+      209,
+      213,
+      217,
+      221,
+      225,
+      229,
+      234,
+      239,
+      245,
+      249,
+      254,
+      259,
+      264,
+      269,
+      274,
+      279,
+      284
+    ], oa = null, He = [
+      [173, 148, 140, 0],
+      [176, 155, 140, 135, 0],
+      [180, 157, 141, 134, 130, 0],
+      [254, 254, 243, 230, 196, 177, 153, 140, 133, 130, 129, 0]
+    ], Ie = [0, 1, 4, 8, 5, 2, 3, 6, 9, 12, 13, 10, 7, 11, 14, 15], Mc = [-0, 1, -1, 2, -2, 3, 4, 6, -3, 5, -4, -5, -6, 7, -7, 8, -8, -9], Fe = [
+      [
+        [
+          [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128],
+          [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128],
+          [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128]
+        ],
+        [
+          [253, 136, 254, 255, 228, 219, 128, 128, 128, 128, 128],
+          [189, 129, 242, 255, 227, 213, 255, 219, 128, 128, 128],
+          [106, 126, 227, 252, 214, 209, 255, 255, 128, 128, 128]
+        ],
+        [
+          [1, 98, 248, 255, 236, 226, 255, 255, 128, 128, 128],
+          [181, 133, 238, 254, 221, 234, 255, 154, 128, 128, 128],
+          [78, 134, 202, 247, 198, 180, 255, 219, 128, 128, 128]
+        ],
+        [
+          [1, 185, 249, 255, 243, 255, 128, 128, 128, 128, 128],
+          [184, 150, 247, 255, 236, 224, 128, 128, 128, 128, 128],
+          [77, 110, 216, 255, 236, 230, 128, 128, 128, 128, 128]
+        ],
+        [
+          [1, 101, 251, 255, 241, 255, 128, 128, 128, 128, 128],
+          [170, 139, 241, 252, 236, 209, 255, 255, 128, 128, 128],
+          [37, 116, 196, 243, 228, 255, 255, 255, 128, 128, 128]
+        ],
+        [
+          [1, 204, 254, 255, 245, 255, 128, 128, 128, 128, 128],
+          [207, 160, 250, 255, 238, 128, 128, 128, 128, 128, 128],
+          [102, 103, 231, 255, 211, 171, 128, 128, 128, 128, 128]
+        ],
+        [
+          [1, 152, 252, 255, 240, 255, 128, 128, 128, 128, 128],
+          [177, 135, 243, 255, 234, 225, 128, 128, 128, 128, 128],
+          [80, 129, 211, 255, 194, 224, 128, 128, 128, 128, 128]
+        ],
+        [
+          [1, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128],
+          [246, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128],
+          [255, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128]
+        ]
+      ],
+      [
+        [
+          [198, 35, 237, 223, 193, 187, 162, 160, 145, 155, 62],
+          [131, 45, 198, 221, 172, 176, 220, 157, 252, 221, 1],
+          [68, 47, 146, 208, 149, 167, 221, 162, 255, 223, 128]
+        ],
+        [
+          [1, 149, 241, 255, 221, 224, 255, 255, 128, 128, 128],
+          [184, 141, 234, 253, 222, 220, 255, 199, 128, 128, 128],
+          [81, 99, 181, 242, 176, 190, 249, 202, 255, 255, 128]
+        ],
+        [
+          [1, 129, 232, 253, 214, 197, 242, 196, 255, 255, 128],
+          [99, 121, 210, 250, 201, 198, 255, 202, 128, 128, 128],
+          [23, 91, 163, 242, 170, 187, 247, 210, 255, 255, 128]
+        ],
+        [
+          [1, 200, 246, 255, 234, 255, 128, 128, 128, 128, 128],
+          [109, 178, 241, 255, 231, 245, 255, 255, 128, 128, 128],
+          [44, 130, 201, 253, 205, 192, 255, 255, 128, 128, 128]
+        ],
+        [
+          [1, 132, 239, 251, 219, 209, 255, 165, 128, 128, 128],
+          [94, 136, 225, 251, 218, 190, 255, 255, 128, 128, 128],
+          [22, 100, 174, 245, 186, 161, 255, 199, 128, 128, 128]
+        ],
+        [
+          [1, 182, 249, 255, 232, 235, 128, 128, 128, 128, 128],
+          [124, 143, 241, 255, 227, 234, 128, 128, 128, 128, 128],
+          [35, 77, 181, 251, 193, 211, 255, 205, 128, 128, 128]
+        ],
+        [
+          [1, 157, 247, 255, 236, 231, 255, 255, 128, 128, 128],
+          [121, 141, 235, 255, 225, 227, 255, 255, 128, 128, 128],
+          [45, 99, 188, 251, 195, 217, 255, 224, 128, 128, 128]
+        ],
+        [
+          [1, 1, 251, 255, 213, 255, 128, 128, 128, 128, 128],
+          [203, 1, 248, 255, 255, 128, 128, 128, 128, 128, 128],
+          [137, 1, 177, 255, 224, 255, 128, 128, 128, 128, 128]
+        ]
+      ],
+      [
+        [
+          [253, 9, 248, 251, 207, 208, 255, 192, 128, 128, 128],
+          [175, 13, 224, 243, 193, 185, 249, 198, 255, 255, 128],
+          [73, 17, 171, 221, 161, 179, 236, 167, 255, 234, 128]
+        ],
+        [
+          [1, 95, 247, 253, 212, 183, 255, 255, 128, 128, 128],
+          [239, 90, 244, 250, 211, 209, 255, 255, 128, 128, 128],
+          [155, 77, 195, 248, 188, 195, 255, 255, 128, 128, 128]
+        ],
+        [
+          [1, 24, 239, 251, 218, 219, 255, 205, 128, 128, 128],
+          [201, 51, 219, 255, 196, 186, 128, 128, 128, 128, 128],
+          [69, 46, 190, 239, 201, 218, 255, 228, 128, 128, 128]
+        ],
+        [
+          [1, 191, 251, 255, 255, 128, 128, 128, 128, 128, 128],
+          [223, 165, 249, 255, 213, 255, 128, 128, 128, 128, 128],
+          [141, 124, 248, 255, 255, 128, 128, 128, 128, 128, 128]
+        ],
+        [
+          [1, 16, 248, 255, 255, 128, 128, 128, 128, 128, 128],
+          [190, 36, 230, 255, 236, 255, 128, 128, 128, 128, 128],
+          [149, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128]
+        ],
+        [
+          [1, 226, 255, 128, 128, 128, 128, 128, 128, 128, 128],
+          [247, 192, 255, 128, 128, 128, 128, 128, 128, 128, 128],
+          [240, 128, 255, 128, 128, 128, 128, 128, 128, 128, 128]
+        ],
+        [
+          [1, 134, 252, 255, 255, 128, 128, 128, 128, 128, 128],
+          [213, 62, 250, 255, 255, 128, 128, 128, 128, 128, 128],
+          [55, 93, 255, 128, 128, 128, 128, 128, 128, 128, 128]
+        ],
+        [
+          [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128],
+          [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128],
+          [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128]
+        ]
+      ],
+      [
+        [
+          [202, 24, 213, 235, 186, 191, 220, 160, 240, 175, 255],
+          [126, 38, 182, 232, 169, 184, 228, 174, 255, 187, 128],
+          [61, 46, 138, 219, 151, 178, 240, 170, 255, 216, 128]
+        ],
+        [
+          [1, 112, 230, 250, 199, 191, 247, 159, 255, 255, 128],
+          [166, 109, 228, 252, 211, 215, 255, 174, 128, 128, 128],
+          [39, 77, 162, 232, 172, 180, 245, 178, 255, 255, 128]
+        ],
+        [
+          [1, 52, 220, 246, 198, 199, 249, 220, 255, 255, 128],
+          [124, 74, 191, 243, 183, 193, 250, 221, 255, 255, 128],
+          [24, 71, 130, 219, 154, 170, 243, 182, 255, 255, 128]
+        ],
+        [
+          [1, 182, 225, 249, 219, 240, 255, 224, 128, 128, 128],
+          [149, 150, 226, 252, 216, 205, 255, 171, 128, 128, 128],
+          [28, 108, 170, 242, 183, 194, 254, 223, 255, 255, 128]
+        ],
+        [
+          [1, 81, 230, 252, 204, 203, 255, 192, 128, 128, 128],
+          [123, 102, 209, 247, 188, 196, 255, 233, 128, 128, 128],
+          [20, 95, 153, 243, 164, 173, 255, 203, 128, 128, 128]
+        ],
+        [
+          [1, 222, 248, 255, 216, 213, 128, 128, 128, 128, 128],
+          [168, 175, 246, 252, 235, 205, 255, 255, 128, 128, 128],
+          [47, 116, 215, 255, 211, 212, 255, 255, 128, 128, 128]
+        ],
+        [
+          [1, 121, 236, 253, 212, 214, 255, 255, 128, 128, 128],
+          [141, 84, 213, 252, 201, 202, 255, 219, 128, 128, 128],
+          [42, 80, 160, 240, 162, 185, 255, 205, 128, 128, 128]
+        ],
+        [
+          [1, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128],
+          [244, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128],
+          [238, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128]
+        ]
+      ]
+    ], Ke = [
+      [
+        [231, 120, 48, 89, 115, 113, 120, 152, 112],
+        [152, 179, 64, 126, 170, 118, 46, 70, 95],
+        [175, 69, 143, 80, 85, 82, 72, 155, 103],
+        [56, 58, 10, 171, 218, 189, 17, 13, 152],
+        [114, 26, 17, 163, 44, 195, 21, 10, 173],
+        [121, 24, 80, 195, 26, 62, 44, 64, 85],
+        [144, 71, 10, 38, 171, 213, 144, 34, 26],
+        [170, 46, 55, 19, 136, 160, 33, 206, 71],
+        [63, 20, 8, 114, 114, 208, 12, 9, 226],
+        [81, 40, 11, 96, 182, 84, 29, 16, 36]
+      ],
+      [
+        [134, 183, 89, 137, 98, 101, 106, 165, 148],
+        [72, 187, 100, 130, 157, 111, 32, 75, 80],
+        [66, 102, 167, 99, 74, 62, 40, 234, 128],
+        [41, 53, 9, 178, 241, 141, 26, 8, 107],
+        [74, 43, 26, 146, 73, 166, 49, 23, 157],
+        [65, 38, 105, 160, 51, 52, 31, 115, 128],
+        [104, 79, 12, 27, 217, 255, 87, 17, 7],
+        [87, 68, 71, 44, 114, 51, 15, 186, 23],
+        [47, 41, 14, 110, 182, 183, 21, 17, 194],
+        [66, 45, 25, 102, 197, 189, 23, 18, 22]
+      ],
+      [
+        [88, 88, 147, 150, 42, 46, 45, 196, 205],
+        [43, 97, 183, 117, 85, 38, 35, 179, 61],
+        [39, 53, 200, 87, 26, 21, 43, 232, 171],
+        [56, 34, 51, 104, 114, 102, 29, 93, 77],
+        [39, 28, 85, 171, 58, 165, 90, 98, 64],
+        [34, 22, 116, 206, 23, 34, 43, 166, 73],
+        [107, 54, 32, 26, 51, 1, 81, 43, 31],
+        [68, 25, 106, 22, 64, 171, 36, 225, 114],
+        [34, 19, 21, 102, 132, 188, 16, 76, 124],
+        [62, 18, 78, 95, 85, 57, 50, 48, 51]
+      ],
+      [
+        [193, 101, 35, 159, 215, 111, 89, 46, 111],
+        [60, 148, 31, 172, 219, 228, 21, 18, 111],
+        [112, 113, 77, 85, 179, 255, 38, 120, 114],
+        [40, 42, 1, 196, 245, 209, 10, 25, 109],
+        [88, 43, 29, 140, 166, 213, 37, 43, 154],
+        [61, 63, 30, 155, 67, 45, 68, 1, 209],
+        [100, 80, 8, 43, 154, 1, 51, 26, 71],
+        [142, 78, 78, 16, 255, 128, 34, 197, 171],
+        [41, 40, 5, 102, 211, 183, 4, 1, 221],
+        [51, 50, 17, 168, 209, 192, 23, 25, 82]
+      ],
+      [
+        [138, 31, 36, 171, 27, 166, 38, 44, 229],
+        [67, 87, 58, 169, 82, 115, 26, 59, 179],
+        [63, 59, 90, 180, 59, 166, 93, 73, 154],
+        [40, 40, 21, 116, 143, 209, 34, 39, 175],
+        [47, 15, 16, 183, 34, 223, 49, 45, 183],
+        [46, 17, 33, 183, 6, 98, 15, 32, 183],
+        [57, 46, 22, 24, 128, 1, 54, 17, 37],
+        [65, 32, 73, 115, 28, 128, 23, 128, 205],
+        [40, 3, 9, 115, 51, 192, 18, 6, 223],
+        [87, 37, 9, 115, 59, 77, 64, 21, 47]
+      ],
+      [
+        [104, 55, 44, 218, 9, 54, 53, 130, 226],
+        [64, 90, 70, 205, 40, 41, 23, 26, 57],
+        [54, 57, 112, 184, 5, 41, 38, 166, 213],
+        [30, 34, 26, 133, 152, 116, 10, 32, 134],
+        [39, 19, 53, 221, 26, 114, 32, 73, 255],
+        [31, 9, 65, 234, 2, 15, 1, 118, 73],
+        [75, 32, 12, 51, 192, 255, 160, 43, 51],
+        [88, 31, 35, 67, 102, 85, 55, 186, 85],
+        [56, 21, 23, 111, 59, 205, 45, 37, 192],
+        [55, 38, 70, 124, 73, 102, 1, 34, 98]
+      ],
+      [
+        [125, 98, 42, 88, 104, 85, 117, 175, 82],
+        [95, 84, 53, 89, 128, 100, 113, 101, 45],
+        [75, 79, 123, 47, 51, 128, 81, 171, 1],
+        [57, 17, 5, 71, 102, 57, 53, 41, 49],
+        [38, 33, 13, 121, 57, 73, 26, 1, 85],
+        [41, 10, 67, 138, 77, 110, 90, 47, 114],
+        [115, 21, 2, 10, 102, 255, 166, 23, 6],
+        [101, 29, 16, 10, 85, 128, 101, 196, 26],
+        [57, 18, 10, 102, 102, 213, 34, 20, 43],
+        [117, 20, 15, 36, 163, 128, 68, 1, 26]
+      ],
+      [
+        [102, 61, 71, 37, 34, 53, 31, 243, 192],
+        [69, 60, 71, 38, 73, 119, 28, 222, 37],
+        [68, 45, 128, 34, 1, 47, 11, 245, 171],
+        [62, 17, 19, 70, 146, 85, 55, 62, 70],
+        [37, 43, 37, 154, 100, 163, 85, 160, 1],
+        [63, 9, 92, 136, 28, 64, 32, 201, 85],
+        [75, 15, 9, 9, 64, 255, 184, 119, 16],
+        [86, 6, 28, 5, 64, 255, 25, 248, 1],
+        [56, 8, 17, 132, 137, 255, 55, 116, 128],
+        [58, 15, 20, 82, 135, 57, 26, 121, 40]
+      ],
+      [
+        [164, 50, 31, 137, 154, 133, 25, 35, 218],
+        [51, 103, 44, 131, 131, 123, 31, 6, 158],
+        [86, 40, 64, 135, 148, 224, 45, 183, 128],
+        [22, 26, 17, 131, 240, 154, 14, 1, 209],
+        [45, 16, 21, 91, 64, 222, 7, 1, 197],
+        [56, 21, 39, 155, 60, 138, 23, 102, 213],
+        [83, 12, 13, 54, 192, 255, 68, 47, 28],
+        [85, 26, 85, 85, 128, 128, 32, 146, 171],
+        [18, 11, 7, 63, 144, 171, 4, 4, 246],
+        [35, 27, 10, 146, 174, 171, 12, 26, 128]
+      ],
+      [
+        [190, 80, 35, 99, 180, 80, 126, 54, 45],
+        [85, 126, 47, 87, 176, 51, 41, 20, 32],
+        [101, 75, 128, 139, 118, 146, 116, 128, 85],
+        [56, 41, 15, 176, 236, 85, 37, 9, 62],
+        [71, 30, 17, 119, 118, 255, 17, 18, 138],
+        [101, 38, 60, 138, 55, 70, 43, 26, 142],
+        [146, 36, 19, 30, 171, 255, 97, 27, 20],
+        [138, 45, 61, 62, 219, 1, 81, 188, 64],
+        [32, 41, 20, 117, 151, 142, 20, 21, 163],
+        [112, 19, 12, 61, 195, 128, 48, 4, 24]
+      ]
+    ], Ee = [
+      [
+        [
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [176, 246, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [223, 241, 252, 255, 255, 255, 255, 255, 255, 255, 255],
+          [249, 253, 253, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 244, 252, 255, 255, 255, 255, 255, 255, 255, 255],
+          [234, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [253, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 246, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [239, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [254, 255, 254, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 248, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [251, 255, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [251, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [254, 255, 254, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 254, 253, 255, 254, 255, 255, 255, 255, 255, 255],
+          [250, 255, 254, 255, 254, 255, 255, 255, 255, 255, 255],
+          [254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ]
+      ],
+      [
+        [
+          [217, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [225, 252, 241, 253, 255, 255, 254, 255, 255, 255, 255],
+          [234, 250, 241, 250, 253, 255, 253, 254, 255, 255, 255]
+        ],
+        [
+          [255, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [223, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [238, 253, 254, 254, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 248, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [249, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 253, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [247, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [252, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [253, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 254, 253, 255, 255, 255, 255, 255, 255, 255, 255],
+          [250, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ]
+      ],
+      [
+        [
+          [186, 251, 250, 255, 255, 255, 255, 255, 255, 255, 255],
+          [234, 251, 244, 254, 255, 255, 255, 255, 255, 255, 255],
+          [251, 251, 243, 253, 254, 255, 254, 255, 255, 255, 255]
+        ],
+        [
+          [255, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [236, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [251, 253, 253, 254, 254, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [254, 254, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [254, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ]
+      ],
+      [
+        [
+          [248, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [250, 254, 252, 254, 255, 255, 255, 255, 255, 255, 255],
+          [248, 254, 249, 253, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 253, 253, 255, 255, 255, 255, 255, 255, 255, 255],
+          [246, 253, 253, 255, 255, 255, 255, 255, 255, 255, 255],
+          [252, 254, 251, 254, 254, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 254, 252, 255, 255, 255, 255, 255, 255, 255, 255],
+          [248, 254, 253, 255, 255, 255, 255, 255, 255, 255, 255],
+          [253, 255, 254, 254, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 251, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [245, 251, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [253, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 251, 253, 255, 255, 255, 255, 255, 255, 255, 255],
+          [252, 253, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 252, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [249, 255, 254, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 254, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 255, 253, 255, 255, 255, 255, 255, 255, 255, 255],
+          [250, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ],
+        [
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+          [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        ]
+      ]
+    ], Ge = [0, 1, 2, 3, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 0], Nc, Y = [], W = [], ka = [], Za, fd2, Nb, pa, Ob, Xc, Tc2, Yc, Uc, Zc, Vc, $c, Wc, Rc, Pc, Sc2, Qc, re = 1, Cc = 2, ia = [], za, vc, fc, Fc, P = [];
     va("UpsampleRgbLinePair", Ga, 3);
     va("UpsampleBgrLinePair", Tb, 3);
     va("UpsampleRgbaLinePair", wd, 4);
@@ -72323,7 +75097,24 @@ function WebPDecoder(imageData) {
     la("YuvToArgbRow", ud, 4);
     la("YuvToRgba4444Row", td, 2);
     la("YuvToRgb565Row", sd, 2);
-    var zd = [0, 4, 8, 12, 128, 132, 136, 140, 256, 260, 264, 268, 384, 388, 392, 396], Ya = [0, 2, 8], Qf = [8, 7, 6, 4, 4, 2, 2, 2, 1, 1, 1, 1], Ne = 1;
+    var zd = [
+      0,
+      4,
+      8,
+      12,
+      128,
+      132,
+      136,
+      140,
+      256,
+      260,
+      264,
+      268,
+      384,
+      388,
+      392,
+      396
+    ], Ya = [0, 2, 8], Qf = [8, 7, 6, 4, 4, 2, 2, 2, 1, 1, 1, 1], Ne = 1;
     this.WebPDecodeRGBA = function(a2, b, c3, d, e2) {
       var f4 = Ua;
       var g = new Cf(), h2 = new Cb();
@@ -72442,6 +75233,7 @@ function WebPDecoder(imageData) {
                     k = 0 > k ? 0 : 100 < k ? 255 : 255 * k / 100;
                     if (0 < k) {
                       for (l2 = m3 = 0; 4 > l2; ++l2) {
+                        ;
                         n2 = e2.pb[l2], 12 > n2.lc && (n2.ia = k * Qf[0 > n2.lc ? 0 : n2.lc] >> 3), m3 |= n2.ia;
                       }
                       m3 && (alert("todo:VP8InitRandom"), e2.ia = 1);
@@ -72590,7 +75382,13 @@ function WebPDecoder(imageData) {
     }
   }
   var frame = frames[0];
-  var rgba = webpdecoder.WebPDecodeRGBA(response, frame["src_off"], frame["src_size"], width2, height2);
+  var rgba = webpdecoder.WebPDecodeRGBA(
+    response,
+    frame["src_off"],
+    frame["src_size"],
+    width2,
+    height2
+  );
   frame["rgba"] = rgba;
   frame["imgwidth"] = width2[0];
   frame["imgheight"] = height2[0];
@@ -72861,7 +75659,9 @@ WebPDecoder.prototype.getData = function() {
       this.internal.languageSettings.languageCode = langCode;
       if (this.internal.languageSettings.isSubscribed === false) {
         this.internal.events.subscribe("putCatalog", function() {
-          this.internal.write("/Lang (" + this.internal.languageSettings.languageCode + ")");
+          this.internal.write(
+            "/Lang (" + this.internal.languageSettings.languageCode + ")"
+          );
         });
         this.internal.languageSettings.isSubscribed = true;
       }
@@ -72890,14 +75690,20 @@ WebPDecoder.prototype.getData = function() {
     for (i2 = 0; i2 < length2; i2++) {
       char_code = text4.charCodeAt(i2);
       if (typeof activeFont.metadata.widthOfString === "function") {
-        output.push((activeFont.metadata.widthOfGlyph(activeFont.metadata.characterToGlyph(char_code)) + charSpace * (1e3 / fontSize) || 0) / 1e3);
+        output.push(
+          (activeFont.metadata.widthOfGlyph(
+            activeFont.metadata.characterToGlyph(char_code)
+          ) + charSpace * (1e3 / fontSize) || 0) / 1e3
+        );
       } else {
         if (doKerning && _typeof(kerning[char_code]) === "object" && !isNaN(parseInt(kerning[char_code][prior_char_code], 10))) {
           kerningValue = kerning[char_code][prior_char_code] / kerningFractionOf;
         } else {
           kerningValue = 0;
         }
-        output.push((widths[char_code] || default_char_width) / widthsFractionOf + kerningValue);
+        output.push(
+          (widths[char_code] || default_char_width) / widthsFractionOf + kerningValue
+        );
       }
       prior_char_code = char_code;
     }
@@ -72960,9 +75766,11 @@ WebPDecoder.prototype.getData = function() {
       words.map(function(wrd) {
         wrd = wrd.split(/\s*\n/);
         if (wrd.length > 1) {
-          wrds = wrds.concat(wrd.map(function(wrd2, idx) {
-            return (idx && wrd2.length ? "\n" : "") + wrd2;
-          }));
+          wrds = wrds.concat(
+            wrd.map(function(wrd2, idx) {
+              return (idx && wrd2.length ? "\n" : "") + wrd2;
+            })
+          );
         } else {
           wrds.push(wrd[0]);
         }
@@ -72983,7 +75791,12 @@ WebPDecoder.prototype.getData = function() {
       }, 0);
       if (line_length + separator_length + current_word_length > maxlen || force) {
         if (current_word_length > maxlen) {
-          tmp = splitLongWord.apply(this, [word, widths_array, maxlen - (line_length + separator_length), maxlen]);
+          tmp = splitLongWord.apply(this, [
+            word,
+            widths_array,
+            maxlen - (line_length + separator_length),
+            maxlen
+          ]);
           line.push(tmp.shift());
           line = [tmp.pop()];
           while (tmp.length) {
@@ -73054,7 +75867,13 @@ WebPDecoder.prototype.getData = function() {
     newOptions.lineIndent = options.lineIndent;
     var i2, l2, output = [];
     for (i2 = 0, l2 = paragraphs.length; i2 < l2; i2++) {
-      output = output.concat(splitParagraphIntoLines.apply(this, [paragraphs[i2], fontUnit_maxLen, newOptions]));
+      output = output.concat(
+        splitParagraphIntoLines.apply(this, [
+          paragraphs[i2],
+          fontUnit_maxLen,
+          newOptions
+        ])
+      );
     }
     return output;
   };
@@ -73094,7 +75913,9 @@ WebPDecoder.prototype.getData = function() {
         if (_typeof(value) === "object") {
           valuestring = compress(value);
         } else {
-          throw new Error("Don't know what to do with value type " + _typeof(value) + ".");
+          throw new Error(
+            "Don't know what to do with value type " + _typeof(value) + "."
+          );
         }
       }
       vals.push(keystring + valuestring);
@@ -73156,7 +75977,9 @@ WebPDecoder.prototype.getData = function() {
   };
   var encodingBlock = {
     codePages: ["WinAnsiEncoding"],
-    WinAnsiEncoding: uncompress("{19m8n201n9q201o9r201s9l201t9m201u8m201w9n201x9o201y8o202k8q202l8r202m9p202q8p20aw8k203k8t203t8v203u9v2cq8s212m9t15m8w15n9w2dw9s16k8u16l9u17s9z17x8y17y9y}")
+    WinAnsiEncoding: uncompress(
+      "{19m8n201n9q201o9r201s9l201t9m201u8m201w9n201x9o201y8o202k8q202l8r202m9p202q8p20aw8k203k8t203t8v203u9v2cq8s212m9t15m8w15n9w2dw9s16k8u16l9u17s9z17x8y17y9y}"
+    )
   };
   var encodings = {
     Unicode: {
@@ -73184,36 +76007,61 @@ WebPDecoder.prototype.getData = function() {
       // At this time this value applies to "widths" and "kerning" numbers.
       // char code 0 represents "default" (average) width - use it for chars missing in this table.
       // key 'fof' represents the "fontMetricsFractionOf" value
-      "Courier-Oblique": uncompress("{'widths'{k3w'fof'6o}'kerning'{'fof'-6o}}"),
-      "Times-BoldItalic": uncompress("{'widths'{k3o2q4ycx2r201n3m201o6o201s2l201t2l201u2l201w3m201x3m201y3m2k1t2l2r202m2n2n3m2o3m2p5n202q6o2r1w2s2l2t2l2u3m2v3t2w1t2x2l2y1t2z1w3k3m3l3m3m3m3n3m3o3m3p3m3q3m3r3m3s3m203t2l203u2l3v2l3w3t3x3t3y3t3z3m4k5n4l4m4m4m4n4m4o4s4p4m4q4m4r4s4s4y4t2r4u3m4v4m4w3x4x5t4y4s4z4s5k3x5l4s5m4m5n3r5o3x5p4s5q4m5r5t5s4m5t3x5u3x5v2l5w1w5x2l5y3t5z3m6k2l6l3m6m3m6n2w6o3m6p2w6q2l6r3m6s3r6t1w6u1w6v3m6w1w6x4y6y3r6z3m7k3m7l3m7m2r7n2r7o1w7p3r7q2w7r4m7s3m7t2w7u2r7v2n7w1q7x2n7y3t202l3mcl4mal2ram3man3mao3map3mar3mas2lat4uau1uav3maw3way4uaz2lbk2sbl3t'fof'6obo2lbp3tbq3mbr1tbs2lbu1ybv3mbz3mck4m202k3mcm4mcn4mco4mcp4mcq5ycr4mcs4mct4mcu4mcv4mcw2r2m3rcy2rcz2rdl4sdm4sdn4sdo4sdp4sdq4sds4sdt4sdu4sdv4sdw4sdz3mek3mel3mem3men3meo3mep3meq4ser2wes2wet2weu2wev2wew1wex1wey1wez1wfl3rfm3mfn3mfo3mfp3mfq3mfr3tfs3mft3rfu3rfv3rfw3rfz2w203k6o212m6o2dw2l2cq2l3t3m3u2l17s3x19m3m}'kerning'{cl{4qu5kt5qt5rs17ss5ts}201s{201ss}201t{cks4lscmscnscoscpscls2wu2yu201ts}201x{2wu2yu}2k{201ts}2w{4qx5kx5ou5qx5rs17su5tu}2x{17su5tu5ou}2y{4qx5kx5ou5qx5rs17ss5ts}'fof'-6ofn{17sw5tw5ou5qw5rs}7t{cksclscmscnscoscps4ls}3u{17su5tu5os5qs}3v{17su5tu5os5qs}7p{17su5tu}ck{4qu5kt5qt5rs17ss5ts}4l{4qu5kt5qt5rs17ss5ts}cm{4qu5kt5qt5rs17ss5ts}cn{4qu5kt5qt5rs17ss5ts}co{4qu5kt5qt5rs17ss5ts}cp{4qu5kt5qt5rs17ss5ts}6l{4qu5ou5qw5rt17su5tu}5q{ckuclucmucnucoucpu4lu}5r{ckuclucmucnucoucpu4lu}7q{cksclscmscnscoscps4ls}6p{4qu5ou5qw5rt17sw5tw}ek{4qu5ou5qw5rt17su5tu}el{4qu5ou5qw5rt17su5tu}em{4qu5ou5qw5rt17su5tu}en{4qu5ou5qw5rt17su5tu}eo{4qu5ou5qw5rt17su5tu}ep{4qu5ou5qw5rt17su5tu}es{17ss5ts5qs4qu}et{4qu5ou5qw5rt17sw5tw}eu{4qu5ou5qw5rt17ss5ts}ev{17ss5ts5qs4qu}6z{17sw5tw5ou5qw5rs}fm{17sw5tw5ou5qw5rs}7n{201ts}fo{17sw5tw5ou5qw5rs}fp{17sw5tw5ou5qw5rs}fq{17sw5tw5ou5qw5rs}7r{cksclscmscnscoscps4ls}fs{17sw5tw5ou5qw5rs}ft{17su5tu}fu{17su5tu}fv{17su5tu}fw{17su5tu}fz{cksclscmscnscoscps4ls}}}"),
-      "Helvetica-Bold": uncompress("{'widths'{k3s2q4scx1w201n3r201o6o201s1w201t1w201u1w201w3m201x3m201y3m2k1w2l2l202m2n2n3r2o3r2p5t202q6o2r1s2s2l2t2l2u2r2v3u2w1w2x2l2y1w2z1w3k3r3l3r3m3r3n3r3o3r3p3r3q3r3r3r3s3r203t2l203u2l3v2l3w3u3x3u3y3u3z3x4k6l4l4s4m4s4n4s4o4s4p4m4q3x4r4y4s4s4t1w4u3r4v4s4w3x4x5n4y4s4z4y5k4m5l4y5m4s5n4m5o3x5p4s5q4m5r5y5s4m5t4m5u3x5v2l5w1w5x2l5y3u5z3r6k2l6l3r6m3x6n3r6o3x6p3r6q2l6r3x6s3x6t1w6u1w6v3r6w1w6x5t6y3x6z3x7k3x7l3x7m2r7n3r7o2l7p3x7q3r7r4y7s3r7t3r7u3m7v2r7w1w7x2r7y3u202l3rcl4sal2lam3ran3rao3rap3rar3ras2lat4tau2pav3raw3uay4taz2lbk2sbl3u'fof'6obo2lbp3xbq3rbr1wbs2lbu2obv3rbz3xck4s202k3rcm4scn4sco4scp4scq6ocr4scs4mct4mcu4mcv4mcw1w2m2zcy1wcz1wdl4sdm4ydn4ydo4ydp4ydq4yds4ydt4sdu4sdv4sdw4sdz3xek3rel3rem3ren3reo3rep3req5ter3res3ret3reu3rev3rew1wex1wey1wez1wfl3xfm3xfn3xfo3xfp3xfq3xfr3ufs3xft3xfu3xfv3xfw3xfz3r203k6o212m6o2dw2l2cq2l3t3r3u2l17s4m19m3r}'kerning'{cl{4qs5ku5ot5qs17sv5tv}201t{2ww4wy2yw}201w{2ks}201x{2ww4wy2yw}2k{201ts201xs}2w{7qs4qu5kw5os5qw5rs17su5tu7tsfzs}2x{5ow5qs}2y{7qs4qu5kw5os5qw5rs17su5tu7tsfzs}'fof'-6o7p{17su5tu5ot}ck{4qs5ku5ot5qs17sv5tv}4l{4qs5ku5ot5qs17sv5tv}cm{4qs5ku5ot5qs17sv5tv}cn{4qs5ku5ot5qs17sv5tv}co{4qs5ku5ot5qs17sv5tv}cp{4qs5ku5ot5qs17sv5tv}6l{17st5tt5os}17s{2kwclvcmvcnvcovcpv4lv4wwckv}5o{2kucltcmtcntcotcpt4lt4wtckt}5q{2ksclscmscnscoscps4ls4wvcks}5r{2ks4ws}5t{2kwclvcmvcnvcovcpv4lv4wwckv}eo{17st5tt5os}fu{17su5tu5ot}6p{17ss5ts}ek{17st5tt5os}el{17st5tt5os}em{17st5tt5os}en{17st5tt5os}6o{201ts}ep{17st5tt5os}es{17ss5ts}et{17ss5ts}eu{17ss5ts}ev{17ss5ts}6z{17su5tu5os5qt}fm{17su5tu5os5qt}fn{17su5tu5os5qt}fo{17su5tu5os5qt}fp{17su5tu5os5qt}fq{17su5tu5os5qt}fs{17su5tu5os5qt}ft{17su5tu5ot}7m{5os}fv{17su5tu5ot}fw{17su5tu5ot}}}"),
+      "Courier-Oblique": uncompress(
+        "{'widths'{k3w'fof'6o}'kerning'{'fof'-6o}}"
+      ),
+      "Times-BoldItalic": uncompress(
+        "{'widths'{k3o2q4ycx2r201n3m201o6o201s2l201t2l201u2l201w3m201x3m201y3m2k1t2l2r202m2n2n3m2o3m2p5n202q6o2r1w2s2l2t2l2u3m2v3t2w1t2x2l2y1t2z1w3k3m3l3m3m3m3n3m3o3m3p3m3q3m3r3m3s3m203t2l203u2l3v2l3w3t3x3t3y3t3z3m4k5n4l4m4m4m4n4m4o4s4p4m4q4m4r4s4s4y4t2r4u3m4v4m4w3x4x5t4y4s4z4s5k3x5l4s5m4m5n3r5o3x5p4s5q4m5r5t5s4m5t3x5u3x5v2l5w1w5x2l5y3t5z3m6k2l6l3m6m3m6n2w6o3m6p2w6q2l6r3m6s3r6t1w6u1w6v3m6w1w6x4y6y3r6z3m7k3m7l3m7m2r7n2r7o1w7p3r7q2w7r4m7s3m7t2w7u2r7v2n7w1q7x2n7y3t202l3mcl4mal2ram3man3mao3map3mar3mas2lat4uau1uav3maw3way4uaz2lbk2sbl3t'fof'6obo2lbp3tbq3mbr1tbs2lbu1ybv3mbz3mck4m202k3mcm4mcn4mco4mcp4mcq5ycr4mcs4mct4mcu4mcv4mcw2r2m3rcy2rcz2rdl4sdm4sdn4sdo4sdp4sdq4sds4sdt4sdu4sdv4sdw4sdz3mek3mel3mem3men3meo3mep3meq4ser2wes2wet2weu2wev2wew1wex1wey1wez1wfl3rfm3mfn3mfo3mfp3mfq3mfr3tfs3mft3rfu3rfv3rfw3rfz2w203k6o212m6o2dw2l2cq2l3t3m3u2l17s3x19m3m}'kerning'{cl{4qu5kt5qt5rs17ss5ts}201s{201ss}201t{cks4lscmscnscoscpscls2wu2yu201ts}201x{2wu2yu}2k{201ts}2w{4qx5kx5ou5qx5rs17su5tu}2x{17su5tu5ou}2y{4qx5kx5ou5qx5rs17ss5ts}'fof'-6ofn{17sw5tw5ou5qw5rs}7t{cksclscmscnscoscps4ls}3u{17su5tu5os5qs}3v{17su5tu5os5qs}7p{17su5tu}ck{4qu5kt5qt5rs17ss5ts}4l{4qu5kt5qt5rs17ss5ts}cm{4qu5kt5qt5rs17ss5ts}cn{4qu5kt5qt5rs17ss5ts}co{4qu5kt5qt5rs17ss5ts}cp{4qu5kt5qt5rs17ss5ts}6l{4qu5ou5qw5rt17su5tu}5q{ckuclucmucnucoucpu4lu}5r{ckuclucmucnucoucpu4lu}7q{cksclscmscnscoscps4ls}6p{4qu5ou5qw5rt17sw5tw}ek{4qu5ou5qw5rt17su5tu}el{4qu5ou5qw5rt17su5tu}em{4qu5ou5qw5rt17su5tu}en{4qu5ou5qw5rt17su5tu}eo{4qu5ou5qw5rt17su5tu}ep{4qu5ou5qw5rt17su5tu}es{17ss5ts5qs4qu}et{4qu5ou5qw5rt17sw5tw}eu{4qu5ou5qw5rt17ss5ts}ev{17ss5ts5qs4qu}6z{17sw5tw5ou5qw5rs}fm{17sw5tw5ou5qw5rs}7n{201ts}fo{17sw5tw5ou5qw5rs}fp{17sw5tw5ou5qw5rs}fq{17sw5tw5ou5qw5rs}7r{cksclscmscnscoscps4ls}fs{17sw5tw5ou5qw5rs}ft{17su5tu}fu{17su5tu}fv{17su5tu}fw{17su5tu}fz{cksclscmscnscoscps4ls}}}"
+      ),
+      "Helvetica-Bold": uncompress(
+        "{'widths'{k3s2q4scx1w201n3r201o6o201s1w201t1w201u1w201w3m201x3m201y3m2k1w2l2l202m2n2n3r2o3r2p5t202q6o2r1s2s2l2t2l2u2r2v3u2w1w2x2l2y1w2z1w3k3r3l3r3m3r3n3r3o3r3p3r3q3r3r3r3s3r203t2l203u2l3v2l3w3u3x3u3y3u3z3x4k6l4l4s4m4s4n4s4o4s4p4m4q3x4r4y4s4s4t1w4u3r4v4s4w3x4x5n4y4s4z4y5k4m5l4y5m4s5n4m5o3x5p4s5q4m5r5y5s4m5t4m5u3x5v2l5w1w5x2l5y3u5z3r6k2l6l3r6m3x6n3r6o3x6p3r6q2l6r3x6s3x6t1w6u1w6v3r6w1w6x5t6y3x6z3x7k3x7l3x7m2r7n3r7o2l7p3x7q3r7r4y7s3r7t3r7u3m7v2r7w1w7x2r7y3u202l3rcl4sal2lam3ran3rao3rap3rar3ras2lat4tau2pav3raw3uay4taz2lbk2sbl3u'fof'6obo2lbp3xbq3rbr1wbs2lbu2obv3rbz3xck4s202k3rcm4scn4sco4scp4scq6ocr4scs4mct4mcu4mcv4mcw1w2m2zcy1wcz1wdl4sdm4ydn4ydo4ydp4ydq4yds4ydt4sdu4sdv4sdw4sdz3xek3rel3rem3ren3reo3rep3req5ter3res3ret3reu3rev3rew1wex1wey1wez1wfl3xfm3xfn3xfo3xfp3xfq3xfr3ufs3xft3xfu3xfv3xfw3xfz3r203k6o212m6o2dw2l2cq2l3t3r3u2l17s4m19m3r}'kerning'{cl{4qs5ku5ot5qs17sv5tv}201t{2ww4wy2yw}201w{2ks}201x{2ww4wy2yw}2k{201ts201xs}2w{7qs4qu5kw5os5qw5rs17su5tu7tsfzs}2x{5ow5qs}2y{7qs4qu5kw5os5qw5rs17su5tu7tsfzs}'fof'-6o7p{17su5tu5ot}ck{4qs5ku5ot5qs17sv5tv}4l{4qs5ku5ot5qs17sv5tv}cm{4qs5ku5ot5qs17sv5tv}cn{4qs5ku5ot5qs17sv5tv}co{4qs5ku5ot5qs17sv5tv}cp{4qs5ku5ot5qs17sv5tv}6l{17st5tt5os}17s{2kwclvcmvcnvcovcpv4lv4wwckv}5o{2kucltcmtcntcotcpt4lt4wtckt}5q{2ksclscmscnscoscps4ls4wvcks}5r{2ks4ws}5t{2kwclvcmvcnvcovcpv4lv4wwckv}eo{17st5tt5os}fu{17su5tu5ot}6p{17ss5ts}ek{17st5tt5os}el{17st5tt5os}em{17st5tt5os}en{17st5tt5os}6o{201ts}ep{17st5tt5os}es{17ss5ts}et{17ss5ts}eu{17ss5ts}ev{17ss5ts}6z{17su5tu5os5qt}fm{17su5tu5os5qt}fn{17su5tu5os5qt}fo{17su5tu5os5qt}fp{17su5tu5os5qt}fq{17su5tu5os5qt}fs{17su5tu5os5qt}ft{17su5tu5ot}7m{5os}fv{17su5tu5ot}fw{17su5tu5ot}}}"
+      ),
       Courier: uncompress("{'widths'{k3w'fof'6o}'kerning'{'fof'-6o}}"),
-      "Courier-BoldOblique": uncompress("{'widths'{k3w'fof'6o}'kerning'{'fof'-6o}}"),
-      "Times-Bold": uncompress("{'widths'{k3q2q5ncx2r201n3m201o6o201s2l201t2l201u2l201w3m201x3m201y3m2k1t2l2l202m2n2n3m2o3m2p6o202q6o2r1w2s2l2t2l2u3m2v3t2w1t2x2l2y1t2z1w3k3m3l3m3m3m3n3m3o3m3p3m3q3m3r3m3s3m203t2l203u2l3v2l3w3t3x3t3y3t3z3m4k5x4l4s4m4m4n4s4o4s4p4m4q3x4r4y4s4y4t2r4u3m4v4y4w4m4x5y4y4s4z4y5k3x5l4y5m4s5n3r5o4m5p4s5q4s5r6o5s4s5t4s5u4m5v2l5w1w5x2l5y3u5z3m6k2l6l3m6m3r6n2w6o3r6p2w6q2l6r3m6s3r6t1w6u2l6v3r6w1w6x5n6y3r6z3m7k3r7l3r7m2w7n2r7o2l7p3r7q3m7r4s7s3m7t3m7u2w7v2r7w1q7x2r7y3o202l3mcl4sal2lam3man3mao3map3mar3mas2lat4uau1yav3maw3tay4uaz2lbk2sbl3t'fof'6obo2lbp3rbr1tbs2lbu2lbv3mbz3mck4s202k3mcm4scn4sco4scp4scq6ocr4scs4mct4mcu4mcv4mcw2r2m3rcy2rcz2rdl4sdm4ydn4ydo4ydp4ydq4yds4ydt4sdu4sdv4sdw4sdz3rek3mel3mem3men3meo3mep3meq4ser2wes2wet2weu2wev2wew1wex1wey1wez1wfl3rfm3mfn3mfo3mfp3mfq3mfr3tfs3mft3rfu3rfv3rfw3rfz3m203k6o212m6o2dw2l2cq2l3t3m3u2l17s4s19m3m}'kerning'{cl{4qt5ks5ot5qy5rw17sv5tv}201t{cks4lscmscnscoscpscls4wv}2k{201ts}2w{4qu5ku7mu5os5qx5ru17su5tu}2x{17su5tu5ou5qs}2y{4qv5kv7mu5ot5qz5ru17su5tu}'fof'-6o7t{cksclscmscnscoscps4ls}3u{17su5tu5os5qu}3v{17su5tu5os5qu}fu{17su5tu5ou5qu}7p{17su5tu5ou5qu}ck{4qt5ks5ot5qy5rw17sv5tv}4l{4qt5ks5ot5qy5rw17sv5tv}cm{4qt5ks5ot5qy5rw17sv5tv}cn{4qt5ks5ot5qy5rw17sv5tv}co{4qt5ks5ot5qy5rw17sv5tv}cp{4qt5ks5ot5qy5rw17sv5tv}6l{17st5tt5ou5qu}17s{ckuclucmucnucoucpu4lu4wu}5o{ckuclucmucnucoucpu4lu4wu}5q{ckzclzcmzcnzcozcpz4lz4wu}5r{ckxclxcmxcnxcoxcpx4lx4wu}5t{ckuclucmucnucoucpu4lu4wu}7q{ckuclucmucnucoucpu4lu}6p{17sw5tw5ou5qu}ek{17st5tt5qu}el{17st5tt5ou5qu}em{17st5tt5qu}en{17st5tt5qu}eo{17st5tt5qu}ep{17st5tt5ou5qu}es{17ss5ts5qu}et{17sw5tw5ou5qu}eu{17sw5tw5ou5qu}ev{17ss5ts5qu}6z{17sw5tw5ou5qu5rs}fm{17sw5tw5ou5qu5rs}fn{17sw5tw5ou5qu5rs}fo{17sw5tw5ou5qu5rs}fp{17sw5tw5ou5qu5rs}fq{17sw5tw5ou5qu5rs}7r{cktcltcmtcntcotcpt4lt5os}fs{17sw5tw5ou5qu5rs}ft{17su5tu5ou5qu}7m{5os}fv{17su5tu5ou5qu}fw{17su5tu5ou5qu}fz{cksclscmscnscoscps4ls}}}"),
-      Symbol: uncompress("{'widths'{k3uaw4r19m3m2k1t2l2l202m2y2n3m2p5n202q6o3k3m2s2l2t2l2v3r2w1t3m3m2y1t2z1wbk2sbl3r'fof'6o3n3m3o3m3p3m3q3m3r3m3s3m3t3m3u1w3v1w3w3r3x3r3y3r3z2wbp3t3l3m5v2l5x2l5z3m2q4yfr3r7v3k7w1o7x3k}'kerning'{'fof'-6o}}"),
-      Helvetica: uncompress("{'widths'{k3p2q4mcx1w201n3r201o6o201s1q201t1q201u1q201w2l201x2l201y2l2k1w2l1w202m2n2n3r2o3r2p5t202q6o2r1n2s2l2t2l2u2r2v3u2w1w2x2l2y1w2z1w3k3r3l3r3m3r3n3r3o3r3p3r3q3r3r3r3s3r203t2l203u2l3v1w3w3u3x3u3y3u3z3r4k6p4l4m4m4m4n4s4o4s4p4m4q3x4r4y4s4s4t1w4u3m4v4m4w3r4x5n4y4s4z4y5k4m5l4y5m4s5n4m5o3x5p4s5q4m5r5y5s4m5t4m5u3x5v1w5w1w5x1w5y2z5z3r6k2l6l3r6m3r6n3m6o3r6p3r6q1w6r3r6s3r6t1q6u1q6v3m6w1q6x5n6y3r6z3r7k3r7l3r7m2l7n3m7o1w7p3r7q3m7r4s7s3m7t3m7u3m7v2l7w1u7x2l7y3u202l3rcl4mal2lam3ran3rao3rap3rar3ras2lat4tau2pav3raw3uay4taz2lbk2sbl3u'fof'6obo2lbp3rbr1wbs2lbu2obv3rbz3xck4m202k3rcm4mcn4mco4mcp4mcq6ocr4scs4mct4mcu4mcv4mcw1w2m2ncy1wcz1wdl4sdm4ydn4ydo4ydp4ydq4yds4ydt4sdu4sdv4sdw4sdz3xek3rel3rem3ren3reo3rep3req5ter3mes3ret3reu3rev3rew1wex1wey1wez1wfl3rfm3rfn3rfo3rfp3rfq3rfr3ufs3xft3rfu3rfv3rfw3rfz3m203k6o212m6o2dw2l2cq2l3t3r3u1w17s4m19m3r}'kerning'{5q{4wv}cl{4qs5kw5ow5qs17sv5tv}201t{2wu4w1k2yu}201x{2wu4wy2yu}17s{2ktclucmucnu4otcpu4lu4wycoucku}2w{7qs4qz5k1m17sy5ow5qx5rsfsu5ty7tufzu}2x{17sy5ty5oy5qs}2y{7qs4qz5k1m17sy5ow5qx5rsfsu5ty7tufzu}'fof'-6o7p{17sv5tv5ow}ck{4qs5kw5ow5qs17sv5tv}4l{4qs5kw5ow5qs17sv5tv}cm{4qs5kw5ow5qs17sv5tv}cn{4qs5kw5ow5qs17sv5tv}co{4qs5kw5ow5qs17sv5tv}cp{4qs5kw5ow5qs17sv5tv}6l{17sy5ty5ow}do{17st5tt}4z{17st5tt}7s{fst}dm{17st5tt}dn{17st5tt}5o{ckwclwcmwcnwcowcpw4lw4wv}dp{17st5tt}dq{17st5tt}7t{5ow}ds{17st5tt}5t{2ktclucmucnu4otcpu4lu4wycoucku}fu{17sv5tv5ow}6p{17sy5ty5ow5qs}ek{17sy5ty5ow}el{17sy5ty5ow}em{17sy5ty5ow}en{5ty}eo{17sy5ty5ow}ep{17sy5ty5ow}es{17sy5ty5qs}et{17sy5ty5ow5qs}eu{17sy5ty5ow5qs}ev{17sy5ty5ow5qs}6z{17sy5ty5ow5qs}fm{17sy5ty5ow5qs}fn{17sy5ty5ow5qs}fo{17sy5ty5ow5qs}fp{17sy5ty5qs}fq{17sy5ty5ow5qs}7r{5ow}fs{17sy5ty5ow5qs}ft{17sv5tv5ow}7m{5ow}fv{17sv5tv5ow}fw{17sv5tv5ow}}}"),
-      "Helvetica-BoldOblique": uncompress("{'widths'{k3s2q4scx1w201n3r201o6o201s1w201t1w201u1w201w3m201x3m201y3m2k1w2l2l202m2n2n3r2o3r2p5t202q6o2r1s2s2l2t2l2u2r2v3u2w1w2x2l2y1w2z1w3k3r3l3r3m3r3n3r3o3r3p3r3q3r3r3r3s3r203t2l203u2l3v2l3w3u3x3u3y3u3z3x4k6l4l4s4m4s4n4s4o4s4p4m4q3x4r4y4s4s4t1w4u3r4v4s4w3x4x5n4y4s4z4y5k4m5l4y5m4s5n4m5o3x5p4s5q4m5r5y5s4m5t4m5u3x5v2l5w1w5x2l5y3u5z3r6k2l6l3r6m3x6n3r6o3x6p3r6q2l6r3x6s3x6t1w6u1w6v3r6w1w6x5t6y3x6z3x7k3x7l3x7m2r7n3r7o2l7p3x7q3r7r4y7s3r7t3r7u3m7v2r7w1w7x2r7y3u202l3rcl4sal2lam3ran3rao3rap3rar3ras2lat4tau2pav3raw3uay4taz2lbk2sbl3u'fof'6obo2lbp3xbq3rbr1wbs2lbu2obv3rbz3xck4s202k3rcm4scn4sco4scp4scq6ocr4scs4mct4mcu4mcv4mcw1w2m2zcy1wcz1wdl4sdm4ydn4ydo4ydp4ydq4yds4ydt4sdu4sdv4sdw4sdz3xek3rel3rem3ren3reo3rep3req5ter3res3ret3reu3rev3rew1wex1wey1wez1wfl3xfm3xfn3xfo3xfp3xfq3xfr3ufs3xft3xfu3xfv3xfw3xfz3r203k6o212m6o2dw2l2cq2l3t3r3u2l17s4m19m3r}'kerning'{cl{4qs5ku5ot5qs17sv5tv}201t{2ww4wy2yw}201w{2ks}201x{2ww4wy2yw}2k{201ts201xs}2w{7qs4qu5kw5os5qw5rs17su5tu7tsfzs}2x{5ow5qs}2y{7qs4qu5kw5os5qw5rs17su5tu7tsfzs}'fof'-6o7p{17su5tu5ot}ck{4qs5ku5ot5qs17sv5tv}4l{4qs5ku5ot5qs17sv5tv}cm{4qs5ku5ot5qs17sv5tv}cn{4qs5ku5ot5qs17sv5tv}co{4qs5ku5ot5qs17sv5tv}cp{4qs5ku5ot5qs17sv5tv}6l{17st5tt5os}17s{2kwclvcmvcnvcovcpv4lv4wwckv}5o{2kucltcmtcntcotcpt4lt4wtckt}5q{2ksclscmscnscoscps4ls4wvcks}5r{2ks4ws}5t{2kwclvcmvcnvcovcpv4lv4wwckv}eo{17st5tt5os}fu{17su5tu5ot}6p{17ss5ts}ek{17st5tt5os}el{17st5tt5os}em{17st5tt5os}en{17st5tt5os}6o{201ts}ep{17st5tt5os}es{17ss5ts}et{17ss5ts}eu{17ss5ts}ev{17ss5ts}6z{17su5tu5os5qt}fm{17su5tu5os5qt}fn{17su5tu5os5qt}fo{17su5tu5os5qt}fp{17su5tu5os5qt}fq{17su5tu5os5qt}fs{17su5tu5os5qt}ft{17su5tu5ot}7m{5os}fv{17su5tu5ot}fw{17su5tu5ot}}}"),
+      "Courier-BoldOblique": uncompress(
+        "{'widths'{k3w'fof'6o}'kerning'{'fof'-6o}}"
+      ),
+      "Times-Bold": uncompress(
+        "{'widths'{k3q2q5ncx2r201n3m201o6o201s2l201t2l201u2l201w3m201x3m201y3m2k1t2l2l202m2n2n3m2o3m2p6o202q6o2r1w2s2l2t2l2u3m2v3t2w1t2x2l2y1t2z1w3k3m3l3m3m3m3n3m3o3m3p3m3q3m3r3m3s3m203t2l203u2l3v2l3w3t3x3t3y3t3z3m4k5x4l4s4m4m4n4s4o4s4p4m4q3x4r4y4s4y4t2r4u3m4v4y4w4m4x5y4y4s4z4y5k3x5l4y5m4s5n3r5o4m5p4s5q4s5r6o5s4s5t4s5u4m5v2l5w1w5x2l5y3u5z3m6k2l6l3m6m3r6n2w6o3r6p2w6q2l6r3m6s3r6t1w6u2l6v3r6w1w6x5n6y3r6z3m7k3r7l3r7m2w7n2r7o2l7p3r7q3m7r4s7s3m7t3m7u2w7v2r7w1q7x2r7y3o202l3mcl4sal2lam3man3mao3map3mar3mas2lat4uau1yav3maw3tay4uaz2lbk2sbl3t'fof'6obo2lbp3rbr1tbs2lbu2lbv3mbz3mck4s202k3mcm4scn4sco4scp4scq6ocr4scs4mct4mcu4mcv4mcw2r2m3rcy2rcz2rdl4sdm4ydn4ydo4ydp4ydq4yds4ydt4sdu4sdv4sdw4sdz3rek3mel3mem3men3meo3mep3meq4ser2wes2wet2weu2wev2wew1wex1wey1wez1wfl3rfm3mfn3mfo3mfp3mfq3mfr3tfs3mft3rfu3rfv3rfw3rfz3m203k6o212m6o2dw2l2cq2l3t3m3u2l17s4s19m3m}'kerning'{cl{4qt5ks5ot5qy5rw17sv5tv}201t{cks4lscmscnscoscpscls4wv}2k{201ts}2w{4qu5ku7mu5os5qx5ru17su5tu}2x{17su5tu5ou5qs}2y{4qv5kv7mu5ot5qz5ru17su5tu}'fof'-6o7t{cksclscmscnscoscps4ls}3u{17su5tu5os5qu}3v{17su5tu5os5qu}fu{17su5tu5ou5qu}7p{17su5tu5ou5qu}ck{4qt5ks5ot5qy5rw17sv5tv}4l{4qt5ks5ot5qy5rw17sv5tv}cm{4qt5ks5ot5qy5rw17sv5tv}cn{4qt5ks5ot5qy5rw17sv5tv}co{4qt5ks5ot5qy5rw17sv5tv}cp{4qt5ks5ot5qy5rw17sv5tv}6l{17st5tt5ou5qu}17s{ckuclucmucnucoucpu4lu4wu}5o{ckuclucmucnucoucpu4lu4wu}5q{ckzclzcmzcnzcozcpz4lz4wu}5r{ckxclxcmxcnxcoxcpx4lx4wu}5t{ckuclucmucnucoucpu4lu4wu}7q{ckuclucmucnucoucpu4lu}6p{17sw5tw5ou5qu}ek{17st5tt5qu}el{17st5tt5ou5qu}em{17st5tt5qu}en{17st5tt5qu}eo{17st5tt5qu}ep{17st5tt5ou5qu}es{17ss5ts5qu}et{17sw5tw5ou5qu}eu{17sw5tw5ou5qu}ev{17ss5ts5qu}6z{17sw5tw5ou5qu5rs}fm{17sw5tw5ou5qu5rs}fn{17sw5tw5ou5qu5rs}fo{17sw5tw5ou5qu5rs}fp{17sw5tw5ou5qu5rs}fq{17sw5tw5ou5qu5rs}7r{cktcltcmtcntcotcpt4lt5os}fs{17sw5tw5ou5qu5rs}ft{17su5tu5ou5qu}7m{5os}fv{17su5tu5ou5qu}fw{17su5tu5ou5qu}fz{cksclscmscnscoscps4ls}}}"
+      ),
+      Symbol: uncompress(
+        "{'widths'{k3uaw4r19m3m2k1t2l2l202m2y2n3m2p5n202q6o3k3m2s2l2t2l2v3r2w1t3m3m2y1t2z1wbk2sbl3r'fof'6o3n3m3o3m3p3m3q3m3r3m3s3m3t3m3u1w3v1w3w3r3x3r3y3r3z2wbp3t3l3m5v2l5x2l5z3m2q4yfr3r7v3k7w1o7x3k}'kerning'{'fof'-6o}}"
+      ),
+      Helvetica: uncompress(
+        "{'widths'{k3p2q4mcx1w201n3r201o6o201s1q201t1q201u1q201w2l201x2l201y2l2k1w2l1w202m2n2n3r2o3r2p5t202q6o2r1n2s2l2t2l2u2r2v3u2w1w2x2l2y1w2z1w3k3r3l3r3m3r3n3r3o3r3p3r3q3r3r3r3s3r203t2l203u2l3v1w3w3u3x3u3y3u3z3r4k6p4l4m4m4m4n4s4o4s4p4m4q3x4r4y4s4s4t1w4u3m4v4m4w3r4x5n4y4s4z4y5k4m5l4y5m4s5n4m5o3x5p4s5q4m5r5y5s4m5t4m5u3x5v1w5w1w5x1w5y2z5z3r6k2l6l3r6m3r6n3m6o3r6p3r6q1w6r3r6s3r6t1q6u1q6v3m6w1q6x5n6y3r6z3r7k3r7l3r7m2l7n3m7o1w7p3r7q3m7r4s7s3m7t3m7u3m7v2l7w1u7x2l7y3u202l3rcl4mal2lam3ran3rao3rap3rar3ras2lat4tau2pav3raw3uay4taz2lbk2sbl3u'fof'6obo2lbp3rbr1wbs2lbu2obv3rbz3xck4m202k3rcm4mcn4mco4mcp4mcq6ocr4scs4mct4mcu4mcv4mcw1w2m2ncy1wcz1wdl4sdm4ydn4ydo4ydp4ydq4yds4ydt4sdu4sdv4sdw4sdz3xek3rel3rem3ren3reo3rep3req5ter3mes3ret3reu3rev3rew1wex1wey1wez1wfl3rfm3rfn3rfo3rfp3rfq3rfr3ufs3xft3rfu3rfv3rfw3rfz3m203k6o212m6o2dw2l2cq2l3t3r3u1w17s4m19m3r}'kerning'{5q{4wv}cl{4qs5kw5ow5qs17sv5tv}201t{2wu4w1k2yu}201x{2wu4wy2yu}17s{2ktclucmucnu4otcpu4lu4wycoucku}2w{7qs4qz5k1m17sy5ow5qx5rsfsu5ty7tufzu}2x{17sy5ty5oy5qs}2y{7qs4qz5k1m17sy5ow5qx5rsfsu5ty7tufzu}'fof'-6o7p{17sv5tv5ow}ck{4qs5kw5ow5qs17sv5tv}4l{4qs5kw5ow5qs17sv5tv}cm{4qs5kw5ow5qs17sv5tv}cn{4qs5kw5ow5qs17sv5tv}co{4qs5kw5ow5qs17sv5tv}cp{4qs5kw5ow5qs17sv5tv}6l{17sy5ty5ow}do{17st5tt}4z{17st5tt}7s{fst}dm{17st5tt}dn{17st5tt}5o{ckwclwcmwcnwcowcpw4lw4wv}dp{17st5tt}dq{17st5tt}7t{5ow}ds{17st5tt}5t{2ktclucmucnu4otcpu4lu4wycoucku}fu{17sv5tv5ow}6p{17sy5ty5ow5qs}ek{17sy5ty5ow}el{17sy5ty5ow}em{17sy5ty5ow}en{5ty}eo{17sy5ty5ow}ep{17sy5ty5ow}es{17sy5ty5qs}et{17sy5ty5ow5qs}eu{17sy5ty5ow5qs}ev{17sy5ty5ow5qs}6z{17sy5ty5ow5qs}fm{17sy5ty5ow5qs}fn{17sy5ty5ow5qs}fo{17sy5ty5ow5qs}fp{17sy5ty5qs}fq{17sy5ty5ow5qs}7r{5ow}fs{17sy5ty5ow5qs}ft{17sv5tv5ow}7m{5ow}fv{17sv5tv5ow}fw{17sv5tv5ow}}}"
+      ),
+      "Helvetica-BoldOblique": uncompress(
+        "{'widths'{k3s2q4scx1w201n3r201o6o201s1w201t1w201u1w201w3m201x3m201y3m2k1w2l2l202m2n2n3r2o3r2p5t202q6o2r1s2s2l2t2l2u2r2v3u2w1w2x2l2y1w2z1w3k3r3l3r3m3r3n3r3o3r3p3r3q3r3r3r3s3r203t2l203u2l3v2l3w3u3x3u3y3u3z3x4k6l4l4s4m4s4n4s4o4s4p4m4q3x4r4y4s4s4t1w4u3r4v4s4w3x4x5n4y4s4z4y5k4m5l4y5m4s5n4m5o3x5p4s5q4m5r5y5s4m5t4m5u3x5v2l5w1w5x2l5y3u5z3r6k2l6l3r6m3x6n3r6o3x6p3r6q2l6r3x6s3x6t1w6u1w6v3r6w1w6x5t6y3x6z3x7k3x7l3x7m2r7n3r7o2l7p3x7q3r7r4y7s3r7t3r7u3m7v2r7w1w7x2r7y3u202l3rcl4sal2lam3ran3rao3rap3rar3ras2lat4tau2pav3raw3uay4taz2lbk2sbl3u'fof'6obo2lbp3xbq3rbr1wbs2lbu2obv3rbz3xck4s202k3rcm4scn4sco4scp4scq6ocr4scs4mct4mcu4mcv4mcw1w2m2zcy1wcz1wdl4sdm4ydn4ydo4ydp4ydq4yds4ydt4sdu4sdv4sdw4sdz3xek3rel3rem3ren3reo3rep3req5ter3res3ret3reu3rev3rew1wex1wey1wez1wfl3xfm3xfn3xfo3xfp3xfq3xfr3ufs3xft3xfu3xfv3xfw3xfz3r203k6o212m6o2dw2l2cq2l3t3r3u2l17s4m19m3r}'kerning'{cl{4qs5ku5ot5qs17sv5tv}201t{2ww4wy2yw}201w{2ks}201x{2ww4wy2yw}2k{201ts201xs}2w{7qs4qu5kw5os5qw5rs17su5tu7tsfzs}2x{5ow5qs}2y{7qs4qu5kw5os5qw5rs17su5tu7tsfzs}'fof'-6o7p{17su5tu5ot}ck{4qs5ku5ot5qs17sv5tv}4l{4qs5ku5ot5qs17sv5tv}cm{4qs5ku5ot5qs17sv5tv}cn{4qs5ku5ot5qs17sv5tv}co{4qs5ku5ot5qs17sv5tv}cp{4qs5ku5ot5qs17sv5tv}6l{17st5tt5os}17s{2kwclvcmvcnvcovcpv4lv4wwckv}5o{2kucltcmtcntcotcpt4lt4wtckt}5q{2ksclscmscnscoscps4ls4wvcks}5r{2ks4ws}5t{2kwclvcmvcnvcovcpv4lv4wwckv}eo{17st5tt5os}fu{17su5tu5ot}6p{17ss5ts}ek{17st5tt5os}el{17st5tt5os}em{17st5tt5os}en{17st5tt5os}6o{201ts}ep{17st5tt5os}es{17ss5ts}et{17ss5ts}eu{17ss5ts}ev{17ss5ts}6z{17su5tu5os5qt}fm{17su5tu5os5qt}fn{17su5tu5os5qt}fo{17su5tu5os5qt}fp{17su5tu5os5qt}fq{17su5tu5os5qt}fs{17su5tu5os5qt}ft{17su5tu5ot}7m{5os}fv{17su5tu5ot}fw{17su5tu5ot}}}"
+      ),
       ZapfDingbats: uncompress("{'widths'{k4u2k1w'fof'6o}'kerning'{'fof'-6o}}"),
       "Courier-Bold": uncompress("{'widths'{k3w'fof'6o}'kerning'{'fof'-6o}}"),
-      "Times-Italic": uncompress("{'widths'{k3n2q4ycx2l201n3m201o5t201s2l201t2l201u2l201w3r201x3r201y3r2k1t2l2l202m2n2n3m2o3m2p5n202q5t2r1p2s2l2t2l2u3m2v4n2w1t2x2l2y1t2z1w3k3m3l3m3m3m3n3m3o3m3p3m3q3m3r3m3s3m203t2l203u2l3v2l3w4n3x4n3y4n3z3m4k5w4l3x4m3x4n4m4o4s4p3x4q3x4r4s4s4s4t2l4u2w4v4m4w3r4x5n4y4m4z4s5k3x5l4s5m3x5n3m5o3r5p4s5q3x5r5n5s3x5t3r5u3r5v2r5w1w5x2r5y2u5z3m6k2l6l3m6m3m6n2w6o3m6p2w6q1w6r3m6s3m6t1w6u1w6v2w6w1w6x4s6y3m6z3m7k3m7l3m7m2r7n2r7o1w7p3m7q2w7r4m7s2w7t2w7u2r7v2s7w1v7x2s7y3q202l3mcl3xal2ram3man3mao3map3mar3mas2lat4wau1vav3maw4nay4waz2lbk2sbl4n'fof'6obo2lbp3mbq3obr1tbs2lbu1zbv3mbz3mck3x202k3mcm3xcn3xco3xcp3xcq5tcr4mcs3xct3xcu3xcv3xcw2l2m2ucy2lcz2ldl4mdm4sdn4sdo4sdp4sdq4sds4sdt4sdu4sdv4sdw4sdz3mek3mel3mem3men3meo3mep3meq4mer2wes2wet2weu2wev2wew1wex1wey1wez1wfl3mfm3mfn3mfo3mfp3mfq3mfr4nfs3mft3mfu3mfv3mfw3mfz2w203k6o212m6m2dw2l2cq2l3t3m3u2l17s3r19m3m}'kerning'{cl{5kt4qw}201s{201sw}201t{201tw2wy2yy6q-t}201x{2wy2yy}2k{201tw}2w{7qs4qy7rs5ky7mw5os5qx5ru17su5tu}2x{17ss5ts5os}2y{7qs4qy7rs5ky7mw5os5qx5ru17su5tu}'fof'-6o6t{17ss5ts5qs}7t{5os}3v{5qs}7p{17su5tu5qs}ck{5kt4qw}4l{5kt4qw}cm{5kt4qw}cn{5kt4qw}co{5kt4qw}cp{5kt4qw}6l{4qs5ks5ou5qw5ru17su5tu}17s{2ks}5q{ckvclvcmvcnvcovcpv4lv}5r{ckuclucmucnucoucpu4lu}5t{2ks}6p{4qs5ks5ou5qw5ru17su5tu}ek{4qs5ks5ou5qw5ru17su5tu}el{4qs5ks5ou5qw5ru17su5tu}em{4qs5ks5ou5qw5ru17su5tu}en{4qs5ks5ou5qw5ru17su5tu}eo{4qs5ks5ou5qw5ru17su5tu}ep{4qs5ks5ou5qw5ru17su5tu}es{5ks5qs4qs}et{4qs5ks5ou5qw5ru17su5tu}eu{4qs5ks5qw5ru17su5tu}ev{5ks5qs4qs}ex{17ss5ts5qs}6z{4qv5ks5ou5qw5ru17su5tu}fm{4qv5ks5ou5qw5ru17su5tu}fn{4qv5ks5ou5qw5ru17su5tu}fo{4qv5ks5ou5qw5ru17su5tu}fp{4qv5ks5ou5qw5ru17su5tu}fq{4qv5ks5ou5qw5ru17su5tu}7r{5os}fs{4qv5ks5ou5qw5ru17su5tu}ft{17su5tu5qs}fu{17su5tu5qs}fv{17su5tu5qs}fw{17su5tu5qs}}}"),
-      "Times-Roman": uncompress("{'widths'{k3n2q4ycx2l201n3m201o6o201s2l201t2l201u2l201w2w201x2w201y2w2k1t2l2l202m2n2n3m2o3m2p5n202q6o2r1m2s2l2t2l2u3m2v3s2w1t2x2l2y1t2z1w3k3m3l3m3m3m3n3m3o3m3p3m3q3m3r3m3s3m203t2l203u2l3v1w3w3s3x3s3y3s3z2w4k5w4l4s4m4m4n4m4o4s4p3x4q3r4r4s4s4s4t2l4u2r4v4s4w3x4x5t4y4s4z4s5k3r5l4s5m4m5n3r5o3x5p4s5q4s5r5y5s4s5t4s5u3x5v2l5w1w5x2l5y2z5z3m6k2l6l2w6m3m6n2w6o3m6p2w6q2l6r3m6s3m6t1w6u1w6v3m6w1w6x4y6y3m6z3m7k3m7l3m7m2l7n2r7o1w7p3m7q3m7r4s7s3m7t3m7u2w7v3k7w1o7x3k7y3q202l3mcl4sal2lam3man3mao3map3mar3mas2lat4wau1vav3maw3say4waz2lbk2sbl3s'fof'6obo2lbp3mbq2xbr1tbs2lbu1zbv3mbz2wck4s202k3mcm4scn4sco4scp4scq5tcr4mcs3xct3xcu3xcv3xcw2l2m2tcy2lcz2ldl4sdm4sdn4sdo4sdp4sdq4sds4sdt4sdu4sdv4sdw4sdz3mek2wel2wem2wen2weo2wep2weq4mer2wes2wet2weu2wev2wew1wex1wey1wez1wfl3mfm3mfn3mfo3mfp3mfq3mfr3sfs3mft3mfu3mfv3mfw3mfz3m203k6o212m6m2dw2l2cq2l3t3m3u1w17s4s19m3m}'kerning'{cl{4qs5ku17sw5ou5qy5rw201ss5tw201ws}201s{201ss}201t{ckw4lwcmwcnwcowcpwclw4wu201ts}2k{201ts}2w{4qs5kw5os5qx5ru17sx5tx}2x{17sw5tw5ou5qu}2y{4qs5kw5os5qx5ru17sx5tx}'fof'-6o7t{ckuclucmucnucoucpu4lu5os5rs}3u{17su5tu5qs}3v{17su5tu5qs}7p{17sw5tw5qs}ck{4qs5ku17sw5ou5qy5rw201ss5tw201ws}4l{4qs5ku17sw5ou5qy5rw201ss5tw201ws}cm{4qs5ku17sw5ou5qy5rw201ss5tw201ws}cn{4qs5ku17sw5ou5qy5rw201ss5tw201ws}co{4qs5ku17sw5ou5qy5rw201ss5tw201ws}cp{4qs5ku17sw5ou5qy5rw201ss5tw201ws}6l{17su5tu5os5qw5rs}17s{2ktclvcmvcnvcovcpv4lv4wuckv}5o{ckwclwcmwcnwcowcpw4lw4wu}5q{ckyclycmycnycoycpy4ly4wu5ms}5r{cktcltcmtcntcotcpt4lt4ws}5t{2ktclvcmvcnvcovcpv4lv4wuckv}7q{cksclscmscnscoscps4ls}6p{17su5tu5qw5rs}ek{5qs5rs}el{17su5tu5os5qw5rs}em{17su5tu5os5qs5rs}en{17su5qs5rs}eo{5qs5rs}ep{17su5tu5os5qw5rs}es{5qs}et{17su5tu5qw5rs}eu{17su5tu5qs5rs}ev{5qs}6z{17sv5tv5os5qx5rs}fm{5os5qt5rs}fn{17sv5tv5os5qx5rs}fo{17sv5tv5os5qx5rs}fp{5os5qt5rs}fq{5os5qt5rs}7r{ckuclucmucnucoucpu4lu5os}fs{17sv5tv5os5qx5rs}ft{17ss5ts5qs}fu{17sw5tw5qs}fv{17sw5tw5qs}fw{17ss5ts5qs}fz{ckuclucmucnucoucpu4lu5os5rs}}}"),
-      "Helvetica-Oblique": uncompress("{'widths'{k3p2q4mcx1w201n3r201o6o201s1q201t1q201u1q201w2l201x2l201y2l2k1w2l1w202m2n2n3r2o3r2p5t202q6o2r1n2s2l2t2l2u2r2v3u2w1w2x2l2y1w2z1w3k3r3l3r3m3r3n3r3o3r3p3r3q3r3r3r3s3r203t2l203u2l3v1w3w3u3x3u3y3u3z3r4k6p4l4m4m4m4n4s4o4s4p4m4q3x4r4y4s4s4t1w4u3m4v4m4w3r4x5n4y4s4z4y5k4m5l4y5m4s5n4m5o3x5p4s5q4m5r5y5s4m5t4m5u3x5v1w5w1w5x1w5y2z5z3r6k2l6l3r6m3r6n3m6o3r6p3r6q1w6r3r6s3r6t1q6u1q6v3m6w1q6x5n6y3r6z3r7k3r7l3r7m2l7n3m7o1w7p3r7q3m7r4s7s3m7t3m7u3m7v2l7w1u7x2l7y3u202l3rcl4mal2lam3ran3rao3rap3rar3ras2lat4tau2pav3raw3uay4taz2lbk2sbl3u'fof'6obo2lbp3rbr1wbs2lbu2obv3rbz3xck4m202k3rcm4mcn4mco4mcp4mcq6ocr4scs4mct4mcu4mcv4mcw1w2m2ncy1wcz1wdl4sdm4ydn4ydo4ydp4ydq4yds4ydt4sdu4sdv4sdw4sdz3xek3rel3rem3ren3reo3rep3req5ter3mes3ret3reu3rev3rew1wex1wey1wez1wfl3rfm3rfn3rfo3rfp3rfq3rfr3ufs3xft3rfu3rfv3rfw3rfz3m203k6o212m6o2dw2l2cq2l3t3r3u1w17s4m19m3r}'kerning'{5q{4wv}cl{4qs5kw5ow5qs17sv5tv}201t{2wu4w1k2yu}201x{2wu4wy2yu}17s{2ktclucmucnu4otcpu4lu4wycoucku}2w{7qs4qz5k1m17sy5ow5qx5rsfsu5ty7tufzu}2x{17sy5ty5oy5qs}2y{7qs4qz5k1m17sy5ow5qx5rsfsu5ty7tufzu}'fof'-6o7p{17sv5tv5ow}ck{4qs5kw5ow5qs17sv5tv}4l{4qs5kw5ow5qs17sv5tv}cm{4qs5kw5ow5qs17sv5tv}cn{4qs5kw5ow5qs17sv5tv}co{4qs5kw5ow5qs17sv5tv}cp{4qs5kw5ow5qs17sv5tv}6l{17sy5ty5ow}do{17st5tt}4z{17st5tt}7s{fst}dm{17st5tt}dn{17st5tt}5o{ckwclwcmwcnwcowcpw4lw4wv}dp{17st5tt}dq{17st5tt}7t{5ow}ds{17st5tt}5t{2ktclucmucnu4otcpu4lu4wycoucku}fu{17sv5tv5ow}6p{17sy5ty5ow5qs}ek{17sy5ty5ow}el{17sy5ty5ow}em{17sy5ty5ow}en{5ty}eo{17sy5ty5ow}ep{17sy5ty5ow}es{17sy5ty5qs}et{17sy5ty5ow5qs}eu{17sy5ty5ow5qs}ev{17sy5ty5ow5qs}6z{17sy5ty5ow5qs}fm{17sy5ty5ow5qs}fn{17sy5ty5ow5qs}fo{17sy5ty5ow5qs}fp{17sy5ty5qs}fq{17sy5ty5ow5qs}7r{5ow}fs{17sy5ty5ow5qs}ft{17sv5tv5ow}7m{5ow}fv{17sv5tv5ow}fw{17sv5tv5ow}}}")
+      "Times-Italic": uncompress(
+        "{'widths'{k3n2q4ycx2l201n3m201o5t201s2l201t2l201u2l201w3r201x3r201y3r2k1t2l2l202m2n2n3m2o3m2p5n202q5t2r1p2s2l2t2l2u3m2v4n2w1t2x2l2y1t2z1w3k3m3l3m3m3m3n3m3o3m3p3m3q3m3r3m3s3m203t2l203u2l3v2l3w4n3x4n3y4n3z3m4k5w4l3x4m3x4n4m4o4s4p3x4q3x4r4s4s4s4t2l4u2w4v4m4w3r4x5n4y4m4z4s5k3x5l4s5m3x5n3m5o3r5p4s5q3x5r5n5s3x5t3r5u3r5v2r5w1w5x2r5y2u5z3m6k2l6l3m6m3m6n2w6o3m6p2w6q1w6r3m6s3m6t1w6u1w6v2w6w1w6x4s6y3m6z3m7k3m7l3m7m2r7n2r7o1w7p3m7q2w7r4m7s2w7t2w7u2r7v2s7w1v7x2s7y3q202l3mcl3xal2ram3man3mao3map3mar3mas2lat4wau1vav3maw4nay4waz2lbk2sbl4n'fof'6obo2lbp3mbq3obr1tbs2lbu1zbv3mbz3mck3x202k3mcm3xcn3xco3xcp3xcq5tcr4mcs3xct3xcu3xcv3xcw2l2m2ucy2lcz2ldl4mdm4sdn4sdo4sdp4sdq4sds4sdt4sdu4sdv4sdw4sdz3mek3mel3mem3men3meo3mep3meq4mer2wes2wet2weu2wev2wew1wex1wey1wez1wfl3mfm3mfn3mfo3mfp3mfq3mfr4nfs3mft3mfu3mfv3mfw3mfz2w203k6o212m6m2dw2l2cq2l3t3m3u2l17s3r19m3m}'kerning'{cl{5kt4qw}201s{201sw}201t{201tw2wy2yy6q-t}201x{2wy2yy}2k{201tw}2w{7qs4qy7rs5ky7mw5os5qx5ru17su5tu}2x{17ss5ts5os}2y{7qs4qy7rs5ky7mw5os5qx5ru17su5tu}'fof'-6o6t{17ss5ts5qs}7t{5os}3v{5qs}7p{17su5tu5qs}ck{5kt4qw}4l{5kt4qw}cm{5kt4qw}cn{5kt4qw}co{5kt4qw}cp{5kt4qw}6l{4qs5ks5ou5qw5ru17su5tu}17s{2ks}5q{ckvclvcmvcnvcovcpv4lv}5r{ckuclucmucnucoucpu4lu}5t{2ks}6p{4qs5ks5ou5qw5ru17su5tu}ek{4qs5ks5ou5qw5ru17su5tu}el{4qs5ks5ou5qw5ru17su5tu}em{4qs5ks5ou5qw5ru17su5tu}en{4qs5ks5ou5qw5ru17su5tu}eo{4qs5ks5ou5qw5ru17su5tu}ep{4qs5ks5ou5qw5ru17su5tu}es{5ks5qs4qs}et{4qs5ks5ou5qw5ru17su5tu}eu{4qs5ks5qw5ru17su5tu}ev{5ks5qs4qs}ex{17ss5ts5qs}6z{4qv5ks5ou5qw5ru17su5tu}fm{4qv5ks5ou5qw5ru17su5tu}fn{4qv5ks5ou5qw5ru17su5tu}fo{4qv5ks5ou5qw5ru17su5tu}fp{4qv5ks5ou5qw5ru17su5tu}fq{4qv5ks5ou5qw5ru17su5tu}7r{5os}fs{4qv5ks5ou5qw5ru17su5tu}ft{17su5tu5qs}fu{17su5tu5qs}fv{17su5tu5qs}fw{17su5tu5qs}}}"
+      ),
+      "Times-Roman": uncompress(
+        "{'widths'{k3n2q4ycx2l201n3m201o6o201s2l201t2l201u2l201w2w201x2w201y2w2k1t2l2l202m2n2n3m2o3m2p5n202q6o2r1m2s2l2t2l2u3m2v3s2w1t2x2l2y1t2z1w3k3m3l3m3m3m3n3m3o3m3p3m3q3m3r3m3s3m203t2l203u2l3v1w3w3s3x3s3y3s3z2w4k5w4l4s4m4m4n4m4o4s4p3x4q3r4r4s4s4s4t2l4u2r4v4s4w3x4x5t4y4s4z4s5k3r5l4s5m4m5n3r5o3x5p4s5q4s5r5y5s4s5t4s5u3x5v2l5w1w5x2l5y2z5z3m6k2l6l2w6m3m6n2w6o3m6p2w6q2l6r3m6s3m6t1w6u1w6v3m6w1w6x4y6y3m6z3m7k3m7l3m7m2l7n2r7o1w7p3m7q3m7r4s7s3m7t3m7u2w7v3k7w1o7x3k7y3q202l3mcl4sal2lam3man3mao3map3mar3mas2lat4wau1vav3maw3say4waz2lbk2sbl3s'fof'6obo2lbp3mbq2xbr1tbs2lbu1zbv3mbz2wck4s202k3mcm4scn4sco4scp4scq5tcr4mcs3xct3xcu3xcv3xcw2l2m2tcy2lcz2ldl4sdm4sdn4sdo4sdp4sdq4sds4sdt4sdu4sdv4sdw4sdz3mek2wel2wem2wen2weo2wep2weq4mer2wes2wet2weu2wev2wew1wex1wey1wez1wfl3mfm3mfn3mfo3mfp3mfq3mfr3sfs3mft3mfu3mfv3mfw3mfz3m203k6o212m6m2dw2l2cq2l3t3m3u1w17s4s19m3m}'kerning'{cl{4qs5ku17sw5ou5qy5rw201ss5tw201ws}201s{201ss}201t{ckw4lwcmwcnwcowcpwclw4wu201ts}2k{201ts}2w{4qs5kw5os5qx5ru17sx5tx}2x{17sw5tw5ou5qu}2y{4qs5kw5os5qx5ru17sx5tx}'fof'-6o7t{ckuclucmucnucoucpu4lu5os5rs}3u{17su5tu5qs}3v{17su5tu5qs}7p{17sw5tw5qs}ck{4qs5ku17sw5ou5qy5rw201ss5tw201ws}4l{4qs5ku17sw5ou5qy5rw201ss5tw201ws}cm{4qs5ku17sw5ou5qy5rw201ss5tw201ws}cn{4qs5ku17sw5ou5qy5rw201ss5tw201ws}co{4qs5ku17sw5ou5qy5rw201ss5tw201ws}cp{4qs5ku17sw5ou5qy5rw201ss5tw201ws}6l{17su5tu5os5qw5rs}17s{2ktclvcmvcnvcovcpv4lv4wuckv}5o{ckwclwcmwcnwcowcpw4lw4wu}5q{ckyclycmycnycoycpy4ly4wu5ms}5r{cktcltcmtcntcotcpt4lt4ws}5t{2ktclvcmvcnvcovcpv4lv4wuckv}7q{cksclscmscnscoscps4ls}6p{17su5tu5qw5rs}ek{5qs5rs}el{17su5tu5os5qw5rs}em{17su5tu5os5qs5rs}en{17su5qs5rs}eo{5qs5rs}ep{17su5tu5os5qw5rs}es{5qs}et{17su5tu5qw5rs}eu{17su5tu5qs5rs}ev{5qs}6z{17sv5tv5os5qx5rs}fm{5os5qt5rs}fn{17sv5tv5os5qx5rs}fo{17sv5tv5os5qx5rs}fp{5os5qt5rs}fq{5os5qt5rs}7r{ckuclucmucnucoucpu4lu5os}fs{17sv5tv5os5qx5rs}ft{17ss5ts5qs}fu{17sw5tw5qs}fv{17sw5tw5qs}fw{17ss5ts5qs}fz{ckuclucmucnucoucpu4lu5os5rs}}}"
+      ),
+      "Helvetica-Oblique": uncompress(
+        "{'widths'{k3p2q4mcx1w201n3r201o6o201s1q201t1q201u1q201w2l201x2l201y2l2k1w2l1w202m2n2n3r2o3r2p5t202q6o2r1n2s2l2t2l2u2r2v3u2w1w2x2l2y1w2z1w3k3r3l3r3m3r3n3r3o3r3p3r3q3r3r3r3s3r203t2l203u2l3v1w3w3u3x3u3y3u3z3r4k6p4l4m4m4m4n4s4o4s4p4m4q3x4r4y4s4s4t1w4u3m4v4m4w3r4x5n4y4s4z4y5k4m5l4y5m4s5n4m5o3x5p4s5q4m5r5y5s4m5t4m5u3x5v1w5w1w5x1w5y2z5z3r6k2l6l3r6m3r6n3m6o3r6p3r6q1w6r3r6s3r6t1q6u1q6v3m6w1q6x5n6y3r6z3r7k3r7l3r7m2l7n3m7o1w7p3r7q3m7r4s7s3m7t3m7u3m7v2l7w1u7x2l7y3u202l3rcl4mal2lam3ran3rao3rap3rar3ras2lat4tau2pav3raw3uay4taz2lbk2sbl3u'fof'6obo2lbp3rbr1wbs2lbu2obv3rbz3xck4m202k3rcm4mcn4mco4mcp4mcq6ocr4scs4mct4mcu4mcv4mcw1w2m2ncy1wcz1wdl4sdm4ydn4ydo4ydp4ydq4yds4ydt4sdu4sdv4sdw4sdz3xek3rel3rem3ren3reo3rep3req5ter3mes3ret3reu3rev3rew1wex1wey1wez1wfl3rfm3rfn3rfo3rfp3rfq3rfr3ufs3xft3rfu3rfv3rfw3rfz3m203k6o212m6o2dw2l2cq2l3t3r3u1w17s4m19m3r}'kerning'{5q{4wv}cl{4qs5kw5ow5qs17sv5tv}201t{2wu4w1k2yu}201x{2wu4wy2yu}17s{2ktclucmucnu4otcpu4lu4wycoucku}2w{7qs4qz5k1m17sy5ow5qx5rsfsu5ty7tufzu}2x{17sy5ty5oy5qs}2y{7qs4qz5k1m17sy5ow5qx5rsfsu5ty7tufzu}'fof'-6o7p{17sv5tv5ow}ck{4qs5kw5ow5qs17sv5tv}4l{4qs5kw5ow5qs17sv5tv}cm{4qs5kw5ow5qs17sv5tv}cn{4qs5kw5ow5qs17sv5tv}co{4qs5kw5ow5qs17sv5tv}cp{4qs5kw5ow5qs17sv5tv}6l{17sy5ty5ow}do{17st5tt}4z{17st5tt}7s{fst}dm{17st5tt}dn{17st5tt}5o{ckwclwcmwcnwcowcpw4lw4wv}dp{17st5tt}dq{17st5tt}7t{5ow}ds{17st5tt}5t{2ktclucmucnu4otcpu4lu4wycoucku}fu{17sv5tv5ow}6p{17sy5ty5ow5qs}ek{17sy5ty5ow}el{17sy5ty5ow}em{17sy5ty5ow}en{5ty}eo{17sy5ty5ow}ep{17sy5ty5ow}es{17sy5ty5qs}et{17sy5ty5ow5qs}eu{17sy5ty5ow5qs}ev{17sy5ty5ow5qs}6z{17sy5ty5ow5qs}fm{17sy5ty5ow5qs}fn{17sy5ty5ow5qs}fo{17sy5ty5ow5qs}fp{17sy5ty5qs}fq{17sy5ty5ow5qs}7r{5ow}fs{17sy5ty5ow5qs}ft{17sv5tv5ow}7m{5ow}fv{17sv5tv5ow}fw{17sv5tv5ow}}}"
+      )
     }
   };
-  API.events.push(["addFont", function(data2) {
-    var font = data2.font;
-    var metrics = fontMetrics["Unicode"][font.postScriptName];
-    if (metrics) {
-      font.metadata["Unicode"] = {};
-      font.metadata["Unicode"].widths = metrics.widths;
-      font.metadata["Unicode"].kerning = metrics.kerning;
+  API.events.push([
+    "addFont",
+    function(data2) {
+      var font = data2.font;
+      var metrics = fontMetrics["Unicode"][font.postScriptName];
+      if (metrics) {
+        font.metadata["Unicode"] = {};
+        font.metadata["Unicode"].widths = metrics.widths;
+        font.metadata["Unicode"].kerning = metrics.kerning;
+      }
+      var encodingBlock2 = encodings["Unicode"][font.postScriptName];
+      if (encodingBlock2) {
+        font.metadata["Unicode"].encoding = encodingBlock2;
+        font.encoding = encodingBlock2.codePages[0];
+      }
     }
-    var encodingBlock2 = encodings["Unicode"][font.postScriptName];
-    if (encodingBlock2) {
-      font.metadata["Unicode"].encoding = encodingBlock2;
-      font.encoding = encodingBlock2.codePages[0];
-    }
-  }]);
+  ]);
 })(jsPDF.API);
 (function(jsPDF2) {
   var binaryStringToUint8Array = function binaryStringToUint8Array2(binary_string) {
@@ -73238,27 +76086,34 @@ WebPDecoder.prototype.getData = function() {
     };
     font.metadata.glyIdsUsed = [0];
   };
-  jsPDF2.API.events.push(["addFont", function(data2) {
-    var file = void 0;
-    var font = data2.font;
-    var instance = data2.instance;
-    if (font.isStandardFont) {
-      return;
-    }
-    if (typeof instance !== "undefined") {
-      if (instance.existsFileInVFS(font.postScriptName) === false) {
-        file = instance.loadFile(font.postScriptName);
+  jsPDF2.API.events.push([
+    "addFont",
+    function(data2) {
+      var file = void 0;
+      var font = data2.font;
+      var instance = data2.instance;
+      if (font.isStandardFont) {
+        return;
+      }
+      if (typeof instance !== "undefined") {
+        if (instance.existsFileInVFS(font.postScriptName) === false) {
+          file = instance.loadFile(font.postScriptName);
+        } else {
+          file = instance.getFileFromVFS(font.postScriptName);
+        }
+        if (typeof file !== "string") {
+          throw new Error(
+            "Font is not stored as string-data in vFS, import fonts or remove declaration doc.addFont('" + font.postScriptName + "')."
+          );
+        }
+        addFont(font, file);
       } else {
-        file = instance.getFileFromVFS(font.postScriptName);
+        throw new Error(
+          "Font does not exist in vFS, import fonts or remove declaration doc.addFont('" + font.postScriptName + "')."
+        );
       }
-      if (typeof file !== "string") {
-        throw new Error("Font is not stored as string-data in vFS, import fonts or remove declaration doc.addFont('" + font.postScriptName + "').");
-      }
-      addFont(font, file);
-    } else {
-      throw new Error("Font does not exist in vFS, import fonts or remove declaration doc.addFont('" + font.postScriptName + "').");
     }
-  }]);
+  ]);
 })(jsPDF);
 (function(jsPDFAPI2) {
   function loadCanvg() {
@@ -73280,7 +76135,9 @@ WebPDecoder.prototype.getData = function() {
     }
     if (isNaN(w) || isNaN(h2)) {
       console2.error("jsPDF.addSvgAsImage: Invalid measurements", arguments);
-      throw new Error("Invalid measurements (width and/or height) passed to jsPDF.addSvgAsImage");
+      throw new Error(
+        "Invalid measurements (width and/or height) passed to jsPDF.addSvgAsImage"
+      );
     }
     var canvas = document.createElement("canvas");
     canvas.width = w;
@@ -73294,14 +76151,25 @@ WebPDecoder.prototype.getData = function() {
       ignoreDimensions: true
     };
     var doc = this;
-    return loadCanvg().then(function(canvg) {
-      return canvg.fromString(ctx, svg2, options);
-    }, function() {
-      return Promise.reject(new Error("Could not load canvg."));
-    }).then(function(instance) {
+    return loadCanvg().then(
+      function(canvg) {
+        return canvg.fromString(ctx, svg2, options);
+      },
+      function() {
+        return Promise.reject(new Error("Could not load canvg."));
+      }
+    ).then(function(instance) {
       return instance.render(options);
     }).then(function() {
-      doc.addImage(canvas.toDataURL("image/jpeg", 1), x2, y3, w, h2, compression, rotation);
+      doc.addImage(
+        canvas.toDataURL("image/jpeg", 1),
+        x2,
+        y3,
+        w,
+        h2,
+        compression,
+        rotation
+      );
     });
   };
 })(jsPDF.API);
@@ -73313,12 +76181,21 @@ WebPDecoder.prototype.getData = function() {
       replaceExpression = new RegExp(pageExpression, "g");
       totalNumberOfPages = this.internal.getNumberOfPages();
     } else {
-      replaceExpression = new RegExp(this.pdfEscape16(pageExpression, this.internal.getFont()), "g");
-      totalNumberOfPages = this.pdfEscape16(this.internal.getNumberOfPages() + "", this.internal.getFont());
+      replaceExpression = new RegExp(
+        this.pdfEscape16(pageExpression, this.internal.getFont()),
+        "g"
+      );
+      totalNumberOfPages = this.pdfEscape16(
+        this.internal.getNumberOfPages() + "",
+        this.internal.getFont()
+      );
     }
     for (var n2 = 1; n2 <= this.internal.getNumberOfPages(); n2++) {
       for (var i2 = 0; i2 < this.internal.pages[n2].length; i2++) {
-        this.internal.pages[n2][i2] = this.internal.pages[n2][i2].replace(replaceExpression, totalNumberOfPages);
+        this.internal.pages[n2][i2] = this.internal.pages[n2][i2].replace(
+          replaceExpression,
+          totalNumberOfPages
+        );
       }
     }
     return this;
@@ -73439,7 +76316,12 @@ WebPDecoder.prototype.getData = function() {
         value: "none",
         type: "name",
         explicitSet: false,
-        valueSet: ["Simplex", "DuplexFlipShortEdge", "DuplexFlipLongEdge", "none"],
+        valueSet: [
+          "Simplex",
+          "DuplexFlipShortEdge",
+          "DuplexFlipLongEdge",
+          "none"
+        ],
         pdfVersion: 1.7
       },
       PickTrayByPDFSize: {
@@ -73487,7 +76369,9 @@ WebPDecoder.prototype.getData = function() {
     }
     if (this.internal.viewerpreferences === void 0) {
       this.internal.viewerpreferences = {};
-      this.internal.viewerpreferences.configuration = JSON.parse(JSON.stringify(configurationTemplate));
+      this.internal.viewerpreferences.configuration = JSON.parse(
+        JSON.stringify(configurationTemplate)
+      );
       this.internal.viewerpreferences.isSubscribed = false;
     }
     configuration = this.internal.viewerpreferences.configuration;
@@ -73546,7 +76430,9 @@ WebPDecoder.prototype.getData = function() {
           }
         }
         if (pdfDict.length !== 0) {
-          this.internal.write("/ViewerPreferences\n<<\n" + pdfDict.join("\n") + "\n>>");
+          this.internal.write(
+            "/ViewerPreferences\n<<\n" + pdfDict.join("\n") + "\n>>"
+          );
         }
       });
       this.internal.viewerpreferences.isSubscribed = true;
@@ -73563,20 +76449,28 @@ WebPDecoder.prototype.getData = function() {
     var xmpmeta_ending = "</x:xmpmeta>";
     var utf8_xmpmeta_beginning = unescape(encodeURIComponent(xmpmeta_beginning));
     var utf8_rdf_beginning = unescape(encodeURIComponent(rdf_beginning));
-    var utf8_metadata = unescape(encodeURIComponent(this.internal.__metadata__.metadata));
+    var utf8_metadata = unescape(
+      encodeURIComponent(this.internal.__metadata__.metadata)
+    );
     var utf8_rdf_ending = unescape(encodeURIComponent(rdf_ending));
     var utf8_xmpmeta_ending = unescape(encodeURIComponent(xmpmeta_ending));
     var total_len = utf8_rdf_beginning.length + utf8_metadata.length + utf8_rdf_ending.length + utf8_xmpmeta_beginning.length + utf8_xmpmeta_ending.length;
     this.internal.__metadata__.metadata_object_number = this.internal.newObject();
-    this.internal.write("<< /Type /Metadata /Subtype /XML /Length " + total_len + " >>");
+    this.internal.write(
+      "<< /Type /Metadata /Subtype /XML /Length " + total_len + " >>"
+    );
     this.internal.write("stream");
-    this.internal.write(utf8_xmpmeta_beginning + utf8_rdf_beginning + utf8_metadata + utf8_rdf_ending + utf8_xmpmeta_ending);
+    this.internal.write(
+      utf8_xmpmeta_beginning + utf8_rdf_beginning + utf8_metadata + utf8_rdf_ending + utf8_xmpmeta_ending
+    );
     this.internal.write("endstream");
     this.internal.write("endobj");
   };
   var putCatalog = function putCatalog2() {
     if (this.internal.__metadata__.metadata_object_number) {
-      this.internal.write("/Metadata " + this.internal.__metadata__.metadata_object_number + " 0 R");
+      this.internal.write(
+        "/Metadata " + this.internal.__metadata__.metadata_object_number + " 0 R"
+      );
     }
   };
   jsPDFAPI2.addMetadata = function(metadata, namespaceuri) {
@@ -73711,9 +76605,12 @@ WebPDecoder.prototype.getData = function() {
       font.isAlreadyPutted = true;
     }
   };
-  jsPDFAPI2.events.push(["putFont", function(args) {
-    identityHFunction(args);
-  }]);
+  jsPDFAPI2.events.push([
+    "putFont",
+    function(args) {
+      identityHFunction(args);
+    }
+  ]);
   var winAnsiEncodingFunction = function winAnsiEncodingFunction2(options) {
     var font = options.font;
     var out = options.out;
@@ -73757,16 +76654,23 @@ WebPDecoder.prototype.getData = function() {
       out("endobj");
       font.objectNumber = newObject();
       for (var j = 0; j < font.metadata.hmtx.widths.length; j++) {
-        font.metadata.hmtx.widths[j] = parseInt(font.metadata.hmtx.widths[j] * (1e3 / font.metadata.head.unitsPerEm));
+        font.metadata.hmtx.widths[j] = parseInt(
+          font.metadata.hmtx.widths[j] * (1e3 / font.metadata.head.unitsPerEm)
+        );
       }
-      out("<</Subtype/TrueType/Type/Font/ToUnicode " + cmap + " 0 R/BaseFont/" + toPDFName(font.fontName) + "/FontDescriptor " + fontDescriptor + " 0 R/Encoding/" + font.encoding + " /FirstChar 29 /LastChar 255 /Widths " + jsPDF2.API.PDFObject.convert(font.metadata.hmtx.widths) + ">>");
+      out(
+        "<</Subtype/TrueType/Type/Font/ToUnicode " + cmap + " 0 R/BaseFont/" + toPDFName(font.fontName) + "/FontDescriptor " + fontDescriptor + " 0 R/Encoding/" + font.encoding + " /FirstChar 29 /LastChar 255 /Widths " + jsPDF2.API.PDFObject.convert(font.metadata.hmtx.widths) + ">>"
+      );
       out("endobj");
       font.isAlreadyPutted = true;
     }
   };
-  jsPDFAPI2.events.push(["putFont", function(args) {
-    winAnsiEncodingFunction(args);
-  }]);
+  jsPDFAPI2.events.push([
+    "putFont",
+    function(args) {
+      winAnsiEncodingFunction(args);
+    }
+  ]);
   var utf8TextFunction = function utf8TextFunction2(args) {
     var text4 = args.text || "";
     var x2 = args.x;
@@ -73840,25 +76744,41 @@ WebPDecoder.prototype.getData = function() {
       for (i2 = 0; i2 < text4.length; i2 += 1) {
         if (Array.isArray(text4[i2])) {
           if (text4[i2].length === 3) {
-            tmpText.push([utf8TextFunction(Object.assign({}, args, {
-              text: text4[i2][0]
-            })).text, text4[i2][1], text4[i2][2]]);
+            tmpText.push([
+              utf8TextFunction(
+                Object.assign({}, args, {
+                  text: text4[i2][0]
+                })
+              ).text,
+              text4[i2][1],
+              text4[i2][2]
+            ]);
           } else {
-            tmpText.push(utf8TextFunction(Object.assign({}, args, {
-              text: text4[i2]
-            })).text);
+            tmpText.push(
+              utf8TextFunction(
+                Object.assign({}, args, {
+                  text: text4[i2]
+                })
+              ).text
+            );
           }
         } else {
-          tmpText.push(utf8TextFunction(Object.assign({}, args, {
-            text: text4[i2]
-          })).text);
+          tmpText.push(
+            utf8TextFunction(
+              Object.assign({}, args, {
+                text: text4[i2]
+              })
+            ).text
+          );
         }
       }
       parms.text = tmpText;
     } else {
-      parms.text = utf8TextFunction(Object.assign({}, args, {
-        text: text4
-      })).text;
+      parms.text = utf8TextFunction(
+        Object.assign({}, args, {
+          text: text4
+        })
+      ).text;
     }
   };
   jsPDFAPI2.events.push(["postProcessText", utf8EscapeFunction]);
@@ -73888,11 +76808,2072 @@ WebPDecoder.prototype.getData = function() {
   };
 })(jsPDF.API);
 (function(jsPDF2) {
-  var bidiUnicodeTypes = ["BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "S", "B", "S", "WS", "B", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "B", "B", "B", "S", "WS", "N", "N", "ET", "ET", "ET", "N", "N", "N", "N", "N", "ES", "CS", "ES", "CS", "CS", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "CS", "N", "N", "N", "N", "N", "N", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "N", "N", "N", "N", "N", "N", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "N", "N", "N", "N", "BN", "BN", "BN", "BN", "BN", "BN", "B", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "CS", "N", "ET", "ET", "ET", "ET", "N", "N", "N", "N", "L", "N", "N", "BN", "N", "N", "ET", "ET", "EN", "EN", "N", "L", "N", "N", "N", "EN", "L", "N", "N", "N", "N", "N", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "N", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "N", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "N", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "N", "N", "L", "L", "L", "L", "L", "L", "L", "N", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "N", "L", "N", "N", "N", "N", "N", "ET", "N", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "R", "NSM", "R", "NSM", "NSM", "R", "NSM", "NSM", "R", "NSM", "N", "N", "N", "N", "N", "N", "N", "N", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "N", "N", "N", "N", "N", "R", "R", "R", "R", "R", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "AN", "AN", "AN", "AN", "AN", "AN", "N", "N", "AL", "ET", "ET", "AL", "CS", "AL", "N", "N", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "AL", "AL", "N", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "AN", "AN", "AN", "AN", "AN", "AN", "AN", "AN", "AN", "AN", "ET", "AN", "AN", "AL", "AL", "AL", "NSM", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "AN", "N", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "AL", "AL", "NSM", "NSM", "N", "NSM", "NSM", "NSM", "NSM", "AL", "AL", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "N", "AL", "AL", "NSM", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "N", "N", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "AL", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "R", "R", "N", "N", "N", "N", "R", "N", "N", "N", "N", "N", "WS", "WS", "WS", "WS", "WS", "WS", "WS", "WS", "WS", "WS", "WS", "BN", "BN", "BN", "L", "R", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "WS", "B", "LRE", "RLE", "PDF", "LRO", "RLO", "CS", "ET", "ET", "ET", "ET", "ET", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "CS", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "WS", "BN", "BN", "BN", "BN", "BN", "N", "LRI", "RLI", "FSI", "PDI", "BN", "BN", "BN", "BN", "BN", "BN", "EN", "L", "N", "N", "EN", "EN", "EN", "EN", "EN", "EN", "ES", "ES", "N", "N", "N", "L", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "ES", "ES", "N", "N", "N", "N", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "N", "N", "N", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "ET", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "L", "L", "L", "L", "L", "L", "L", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "L", "L", "L", "L", "L", "N", "N", "N", "N", "N", "R", "NSM", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "ES", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "N", "R", "R", "R", "R", "R", "N", "R", "N", "R", "R", "N", "R", "R", "N", "R", "R", "R", "R", "R", "R", "R", "R", "R", "R", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "CS", "N", "CS", "N", "N", "CS", "N", "N", "N", "N", "N", "N", "N", "N", "N", "ET", "N", "N", "ES", "ES", "N", "N", "N", "N", "N", "ET", "ET", "N", "N", "N", "N", "N", "AL", "AL", "AL", "AL", "AL", "N", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "N", "N", "BN", "N", "N", "N", "ET", "ET", "ET", "N", "N", "N", "N", "N", "ES", "CS", "ES", "CS", "CS", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "CS", "N", "N", "N", "N", "N", "N", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "N", "N", "N", "N", "N", "N", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "N", "N", "N", "L", "L", "L", "L", "L", "L", "N", "N", "L", "L", "L", "L", "L", "L", "N", "N", "L", "L", "L", "L", "L", "L", "N", "N", "L", "L", "L", "N", "N", "N", "ET", "ET", "N", "N", "N", "ET", "ET", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N", "N"];
+  var bidiUnicodeTypes = [
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "S",
+    "B",
+    "S",
+    "WS",
+    "B",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "B",
+    "B",
+    "B",
+    "S",
+    "WS",
+    "N",
+    "N",
+    "ET",
+    "ET",
+    "ET",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "ES",
+    "CS",
+    "ES",
+    "CS",
+    "CS",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "CS",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "N",
+    "N",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "B",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "CS",
+    "N",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "N",
+    "N",
+    "N",
+    "N",
+    "L",
+    "N",
+    "N",
+    "BN",
+    "N",
+    "N",
+    "ET",
+    "ET",
+    "EN",
+    "EN",
+    "N",
+    "L",
+    "N",
+    "N",
+    "N",
+    "EN",
+    "L",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "L",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "ET",
+    "N",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "R",
+    "NSM",
+    "R",
+    "NSM",
+    "NSM",
+    "R",
+    "NSM",
+    "NSM",
+    "R",
+    "NSM",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "AN",
+    "AN",
+    "AN",
+    "AN",
+    "AN",
+    "AN",
+    "N",
+    "N",
+    "AL",
+    "ET",
+    "ET",
+    "AL",
+    "CS",
+    "AL",
+    "N",
+    "N",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "AL",
+    "AL",
+    "N",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "AN",
+    "AN",
+    "AN",
+    "AN",
+    "AN",
+    "AN",
+    "AN",
+    "AN",
+    "AN",
+    "AN",
+    "ET",
+    "AN",
+    "AN",
+    "AL",
+    "AL",
+    "AL",
+    "NSM",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "AN",
+    "N",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "AL",
+    "AL",
+    "NSM",
+    "NSM",
+    "N",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "AL",
+    "AL",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "N",
+    "AL",
+    "AL",
+    "NSM",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "N",
+    "N",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "AL",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "R",
+    "R",
+    "N",
+    "N",
+    "N",
+    "N",
+    "R",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "WS",
+    "WS",
+    "WS",
+    "WS",
+    "WS",
+    "WS",
+    "WS",
+    "WS",
+    "WS",
+    "WS",
+    "WS",
+    "BN",
+    "BN",
+    "BN",
+    "L",
+    "R",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "WS",
+    "B",
+    "LRE",
+    "RLE",
+    "PDF",
+    "LRO",
+    "RLO",
+    "CS",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "CS",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "WS",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "N",
+    "LRI",
+    "RLI",
+    "FSI",
+    "PDI",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "BN",
+    "EN",
+    "L",
+    "N",
+    "N",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "ES",
+    "ES",
+    "N",
+    "N",
+    "N",
+    "L",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "ES",
+    "ES",
+    "N",
+    "N",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "N",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "ET",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "R",
+    "NSM",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "ES",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "N",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "N",
+    "R",
+    "N",
+    "R",
+    "R",
+    "N",
+    "R",
+    "R",
+    "N",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "R",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "NSM",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "CS",
+    "N",
+    "CS",
+    "N",
+    "N",
+    "CS",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "ET",
+    "N",
+    "N",
+    "ES",
+    "ES",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "ET",
+    "ET",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "N",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "AL",
+    "N",
+    "N",
+    "BN",
+    "N",
+    "N",
+    "N",
+    "ET",
+    "ET",
+    "ET",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "ES",
+    "CS",
+    "ES",
+    "CS",
+    "CS",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "EN",
+    "CS",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "L",
+    "L",
+    "L",
+    "N",
+    "N",
+    "N",
+    "ET",
+    "ET",
+    "N",
+    "N",
+    "N",
+    "ET",
+    "ET",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N",
+    "N"
+  ];
   jsPDF2.__bidiEngine__ = jsPDF2.prototype.__bidiEngine__ = function(options) {
     var _UNICODE_TYPES = _bidiUnicodeTypes;
-    var _STATE_TABLE_LTR = [[0, 3, 0, 1, 0, 0, 0], [0, 3, 0, 1, 2, 2, 0], [0, 3, 0, 17, 2, 0, 1], [0, 3, 5, 5, 4, 1, 0], [0, 3, 21, 21, 4, 0, 1], [0, 3, 5, 5, 4, 2, 0]];
-    var _STATE_TABLE_RTL = [[2, 0, 1, 1, 0, 1, 0], [2, 0, 1, 1, 0, 2, 0], [2, 0, 2, 1, 3, 2, 0], [2, 0, 2, 33, 3, 1, 1]];
+    var _STATE_TABLE_LTR = [
+      [0, 3, 0, 1, 0, 0, 0],
+      [0, 3, 0, 1, 2, 2, 0],
+      [0, 3, 0, 17, 2, 0, 1],
+      [0, 3, 5, 5, 4, 1, 0],
+      [0, 3, 21, 21, 4, 0, 1],
+      [0, 3, 5, 5, 4, 2, 0]
+    ];
+    var _STATE_TABLE_RTL = [
+      [2, 0, 1, 1, 0, 1, 0],
+      [2, 0, 1, 1, 0, 2, 0],
+      [2, 0, 2, 1, 3, 2, 0],
+      [2, 0, 2, 33, 3, 1, 1]
+    ];
     var _TYPE_NAMES_MAP = {
       L: 0,
       R: 1,
@@ -73912,8 +78893,56 @@ WebPDecoder.prototype.getData = function() {
       254: 6,
       255: 7
     };
-    var _SWAP_TABLE = ["(", ")", "(", "<", ">", "<", "[", "]", "[", "{", "}", "{", "\xAB", "\xBB", "\xAB", "\u2039", "\u203A", "\u2039", "\u2045", "\u2046", "\u2045", "\u207D", "\u207E", "\u207D", "\u208D", "\u208E", "\u208D", "\u2264", "\u2265", "\u2264", "\u2329", "\u232A", "\u2329", "\uFE59", "\uFE5A", "\uFE59", "\uFE5B", "\uFE5C", "\uFE5B", "\uFE5D", "\uFE5E", "\uFE5D", "\uFE64", "\uFE65", "\uFE64"];
-    var _LTR_RANGES_REG_EXPR = new RegExp(/^([1-4|9]|1[0-9]|2[0-9]|3[0168]|4[04589]|5[012]|7[78]|159|16[0-9]|17[0-2]|21[569]|22[03489]|250)$/);
+    var _SWAP_TABLE = [
+      "(",
+      ")",
+      "(",
+      "<",
+      ">",
+      "<",
+      "[",
+      "]",
+      "[",
+      "{",
+      "}",
+      "{",
+      "\xAB",
+      "\xBB",
+      "\xAB",
+      "\u2039",
+      "\u203A",
+      "\u2039",
+      "\u2045",
+      "\u2046",
+      "\u2045",
+      "\u207D",
+      "\u207E",
+      "\u207D",
+      "\u208D",
+      "\u208E",
+      "\u208D",
+      "\u2264",
+      "\u2265",
+      "\u2264",
+      "\u2329",
+      "\u232A",
+      "\u2329",
+      "\uFE59",
+      "\uFE5A",
+      "\uFE59",
+      "\uFE5B",
+      "\uFE5C",
+      "\uFE5B",
+      "\uFE5D",
+      "\uFE5E",
+      "\uFE5D",
+      "\uFE64",
+      "\uFE65",
+      "\uFE64"
+    ];
+    var _LTR_RANGES_REG_EXPR = new RegExp(
+      /^([1-4|9]|1[0-9]|2[0-9]|3[0168]|4[04589]|5[012]|7[78]|159|16[0-9]|17[0-2]|21[569]|22[03489]|250)$/
+    );
     var _lastArabic = false, _hasUbatB, _hasUbatS, DIR_LTR = 0, DIR_RTL = 1, _isInVisual, _isInRtl, _isOutVisual, _isOutRtl, _isSymmetricSwapping, _dir = DIR_LTR;
     this.__bidiEngine__ = {};
     var _init = function _init2(text4, sourceToTargetMap) {
@@ -74086,7 +79115,12 @@ WebPDecoder.prototype.getData = function() {
       }
       for (index3 = 0; index3 < len; index3++) {
         prevState = newState;
-        resolvedTypes[index3] = _resolveCharType(chars, types, resolvedTypes, index3);
+        resolvedTypes[index3] = _resolveCharType(
+          chars,
+          types,
+          resolvedTypes,
+          index3
+        );
         newState = stateTable[prevState][_TYPE_NAMES_MAP[resolvedTypes[index3]]];
         action = newState & 240;
         newState &= 15;
@@ -74261,7 +79295,11 @@ WebPDecoder.prototype.getData = function() {
       tmpText = [];
       for (i2 = 0; i2 < text4.length; i2 += 1) {
         if (Object.prototype.toString.call(text4[i2]) === "[object Array]") {
-          tmpText.push([bidiEngine.doBidiReorder(text4[i2][0]), text4[i2][1], text4[i2][2]]);
+          tmpText.push([
+            bidiEngine.doBidiReorder(text4[i2][0]),
+            text4[i2][1],
+            text4[i2][2]
+          ]);
         } else {
           tmpText.push([bidiEngine.doBidiReorder(text4[i2])]);
         }
@@ -74310,7 +79348,12 @@ jsPDF.API.TTFFont = function() {
     this.ascender = this.os2.exists && this.os2.ascender || this.hhea.ascender;
     this.decender = this.os2.exists && this.os2.decender || this.hhea.decender;
     this.lineGap = this.os2.exists && this.os2.lineGap || this.hhea.lineGap;
-    return this.bbox = [this.head.xMin, this.head.yMin, this.head.xMax, this.head.yMax];
+    return this.bbox = [
+      this.head.xMin,
+      this.head.yMin,
+      this.head.xMax,
+      this.head.yMax
+    ];
   };
   TTFFont.prototype.registerTTF = function() {
     var e2, hi, low, raw, _ref;
@@ -74631,6 +79674,7 @@ Table = function() {
     info = this.file.directory.tables[this.tag];
     this.exists = !!info;
     if (info) {
+      ;
       this.offset = info.offset, this.length = info.length;
       this.parse(this.file.contents);
     }
@@ -75162,9 +80206,15 @@ var NameTable = function(_super) {
     this.fontName = strings[4];
     this.version = strings[5];
     try {
-      this.postscriptName = strings[6][0].raw.replace(/[\x00-\x19\x80-\xff]/g, "");
+      this.postscriptName = strings[6][0].raw.replace(
+        /[\x00-\x19\x80-\xff]/g,
+        ""
+      );
     } catch (e2) {
-      this.postscriptName = strings[4][0].raw.replace(/[\x00-\x19\x80-\xff]/g, "");
+      this.postscriptName = strings[4][0].raw.replace(
+        /[\x00-\x19\x80-\xff]/g,
+        ""
+      );
     }
     this.trademark = strings[7];
     this.manufacturer = strings[8];
@@ -75292,7 +80342,14 @@ var GlyfTable = function(_super) {
     if (numberOfContours === -1) {
       this.cache[id] = new CompoundGlyph(raw, xMin, yMin, xMax, yMax);
     } else {
-      this.cache[id] = new SimpleGlyph(raw, numberOfContours, xMin, yMin, xMax, yMax);
+      this.cache[id] = new SimpleGlyph(
+        raw,
+        numberOfContours,
+        xMin,
+        yMin,
+        xMax,
+        yMax
+      );
     }
     return this.cache[id];
   };
@@ -77211,7 +82268,9 @@ var computeNodePoints = (fromNode, toNode3) => {
 var getNodeLinePath = (startPoint, endPoint, node3, toNode3) => {
   let targetIndex = getAssociativeLineTargetIndex(node3, toNode3);
   let controlPoints = [];
-  let associativeLineTargetControlOffsets = node3.getData("associativeLineTargetControlOffsets");
+  let associativeLineTargetControlOffsets = node3.getData(
+    "associativeLineTargetControlOffsets"
+  );
   if (associativeLineTargetControlOffsets && associativeLineTargetControlOffsets[targetIndex]) {
     let offsets = associativeLineTargetControlOffsets[targetIndex];
     controlPoints = [
@@ -98839,98 +103898,6 @@ export {
  */
 /**
  * @license
- * Copyright (c) 2014 Steven Spungin (TwelveTone LLC)  steven@twelvetone.tv
- *
- * Licensed under the MIT License.
- * http://opensource.org/licenses/mit-license
- */
-/**
- * @license
- * Copyright (c) 2017 Aras Abbasi
- *
- * Licensed under the MIT License.
- * http://opensource.org/licenses/mit-license
- */
-/** @license
- * jsPDF Autoprint Plugin
- *
- * Licensed under the MIT License.
- * http://opensource.org/licenses/mit-license
- */
-/**
- * @license
- * jsPDF filters PlugIn
- * Copyright (c) 2014 Aras Abbasi
- *
- * Licensed under the MIT License.
- * http://opensource.org/licenses/mit-license
- */
-/**
- * @license
- * jsPDF fileloading PlugIn
- * Copyright (c) 2018 Aras Abbasi (aras.abbasi@gmail.com)
- *
- * Licensed under the MIT License.
- * http://opensource.org/licenses/mit-license
- */
-/**
- * @license
- * ====================================================================
- * Copyright (c) 2013 Youssef Beddad, youssef.beddad@gmail.com
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * ====================================================================
- */
-/**
- * @license
- *
- * Licensed under the MIT License.
- * http://opensource.org/licenses/mit-license
- */
-/**
- * @license
- *
- * Copyright (c) 2014 James Robb, https://github.com/jamesbrobb
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * ====================================================================
- */
-/**
- * @license
  * (c) Dean McNamee <dean@gmail.com>, 2013.
  *
  * https://github.com/deanm/omggif
@@ -98991,7 +103958,7 @@ export {
 */
 /**
  * @license
- * Copyright (c) 2018 Aras Abbasi
+ * Copyright (c) 2017 Aras Abbasi
  *
  * Licensed under the MIT License.
  * http://opensource.org/licenses/mit-license
@@ -99004,128 +103971,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 https://webpjs.appspot.com
 WebPRiffParser dominikhlbg@gmail.com
 */
-/**
- * @license
- * Copyright (c) 2019 Aras Abbasi
- *
- * Licensed under the MIT License.
- * http://opensource.org/licenses/mit-license
- */
-/**
- * @license
- *
- * Copyright (c) 2021 Antti Palola, https://github.com/Pantura
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * ====================================================================
- */
-/**
- * @license
- * Licensed under the MIT License.
- * http://opensource.org/licenses/mit-license
- */
-/** @license
- * Copyright (c) 2012 Willow Systems Corporation, https://github.com/willowsystems
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * ====================================================================
- */
-/**
- * @license
- * ====================================================================
- * Copyright (c) 2013 Eduardo Menezes de Morais, eduardo.morais@usp.br
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * ====================================================================
- */
-/** ====================================================================
- * @license
- * jsPDF XMP metadata plugin
- * Copyright (c) 2016 Jussi Utunen, u-jussi@suomi24.fi
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * ====================================================================
- */
-/**
- * @license
- * jsPDF virtual FileSystem functionality
- *
- * Licensed under the MIT License.
- * http://opensource.org/licenses/mit-license
- */
-/**
- * @license
- * Unicode Bidi Engine based on the work of Alex Shensis (@asthensis)
- * MIT License
- */
 /*! Bundled license information:
 
 jszip/dist/jszip.min.js:
